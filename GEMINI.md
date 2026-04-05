@@ -1,29 +1,35 @@
-# Project Context: tradetool
+# Project Context: Binance Trade Tool
 
 ## Project Overview
-`tradetool` is a Flutter application based on the standard Flutter counter template. It is designed to run on multiple platforms, including Android, iOS, Linux, macOS, Web, and Windows.
+`tradetool` is a Flutter application for trading futures on the Binance platform. It utilizes the Binance API for live and testnet environments.
 
 - **Primary Technologies:** Flutter, Dart (SDK ^3.9.2).
-- **Key Dependencies:** `cupertino_icons`.
-- **Architecture:** Standard Flutter widget-based architecture with `setState` for local state management.
+- **Core Dependencies:** `provider`, `shared_preferences`, `cupertino_icons`.
+- **Architecture:** Strictly follow **MVVM (Model-View-ViewModel)** using the `provider` package.
 
-## Building and Running
-The following commands can be used to develop and build the project:
-
-- **Run in Debug Mode:** `flutter run`
-- **Run Tests:** `flutter test`
-- **Static Analysis:** `flutter analyze`
-- **Build for Windows:** `flutter build windows` (and similarly for other platforms like `apk`, `ios`, `web`).
-- **Update Dependencies:** `flutter pub get`
+## UI & Design Standards
+- **Theme Mode:** Always use **Dark Mode**.
+- **Primary Color:** Binance Yellow (`#F0B90B`).
+- **Aesthetic:** Modern design with gradients and transparent/glassmorphism objects.
+- **Material Design:** Follow Material 3 guidelines while incorporating the custom theme.
 
 ## Development Conventions
-- **Linting:** The project follows the recommended Flutter lints defined in `package:flutter_lints/flutter.yaml`.
-- **UI:** Uses Material Design 3 (implied by `ColorScheme.fromSeed` in `main.dart`).
-- **Formatting:** Adheres to the standard Dart formatting rules (`dart format`).
-- **Testing:** Widget tests are located in the `test/` directory.
+- **State Management:** Use `ChangeNotifier` classes as ViewModels and provide them using `ChangeNotifierProvider`.
+- **Logic Separation:** Views should only handle UI. Business logic must reside in ViewModels. Models handle data structures and repository/API calls.
+- **Persistence:** Use `shared_preferences` for storing API keys (Testnet and Live) and the network toggle state.
+- **Linting:** Follow standard Flutter lints.
+
+## Building and Running
+- **Debug:** `flutter run`
+- **Tests:** `flutter test`
+- **Analysis:** `flutter analyze`
+- **Dependencies:** `flutter pub get`
+
+## Planned Features
+- **Settings Page:** UI for API keys (API Key, Secret Key) for both Live and Testnet, plus a toggle to switch networks.
+- **Binance API Integration:** For futures trading.
 
 ## Key Files
-- `lib/main.dart`: The main entry point of the application, containing the `MyApp` and `MyHomePage` widgets.
-- `pubspec.yaml`: Defines project dependencies, assets, and versioning.
-- `analysis_options.yaml`: Configures the Dart analyzer and linter rules.
-- `test/widget_test.dart`: Contains smoke tests for the UI.
+- `lib/main.dart`: Entry point with theme configuration and top-level providers.
+- `pubspec.yaml`: Dependencies and project metadata.
+- `README.md`: High-level project documentation.
