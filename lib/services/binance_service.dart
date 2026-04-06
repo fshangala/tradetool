@@ -151,6 +151,22 @@ class BinanceService {
     }
   }
 
+  Future<List<String>> fetchExchangeInfo() async {
+    final response = await http.get(Uri.parse('$baseUrl/fapi/v1/exchangeInfo'));
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final List<dynamic> symbols = data['symbols'];
+      
+      return symbols
+          .where((s) => s['status'] == 'TRADING' && s['contractType'] == 'PERPETUAL' && s['symbol'].toString().endsWith('USDT'))
+          .map((s) => s['symbol'].toString())
+          .toList();
+    } else {
+      throw Exception('Failed to load exchange info: ${response.body}');
+    }
+  }
+
   Future<List<KLineEntity>> fetchKlines({
     required String symbol,
     required String interval,

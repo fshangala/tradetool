@@ -39,9 +39,9 @@
 - **Security:** Implemented HMAC SHA256 signing for authenticated API requests.
 - **Robustness:** Added safe data parsing and null safety checks across all components to prevent crashes from malformed API responses.
 - **Independent Positions Management:** Implemented independent fetching of open positions using the `/fapi/v3/positionRisk` endpoint.
-- **Dashboard Enhancements:** Added a dedicated refresh button for positions and integrated open position entry prices into the candlestick chart.
+- **Dashboard Enhancements:** Added a dedicated refresh button for positions, integrated open position entry prices into the candlestick chart, and implemented dual dropdown selectors for customizable symbols and 15+ time intervals.
 - **Trading Operations:** Implemented "Close Position" functionality for instant market exit.
-
+- **Customizable Pair Management:** Added a settings section to fetch, select, and persist a personalized list of trading pairs using `SharedPreferences`.
 ## Planned Features
 - **Enhanced Orders:** Support for Limit orders, Stop Loss, and Take Profit.
 - **Historical Data:** View trade history and transaction logs.

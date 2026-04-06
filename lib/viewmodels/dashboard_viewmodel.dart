@@ -73,7 +73,7 @@ class DashboardViewModel extends ChangeNotifier {
   String _currentInterval = '1m';
   String get currentInterval => _currentInterval;
 
-  final String _currentSymbol = 'BTCUSDT';
+  String _currentSymbol = 'BTCUSDT';
   String get currentSymbol => _currentSymbol;
 
   bool _isLoading = true;
@@ -127,11 +127,18 @@ class DashboardViewModel extends ChangeNotifier {
 
   void _onSettingsChanged() {
     _updateBinanceService();
+    // Reset symbol if it's no longer in the selected list
+    if (!settingsViewModel.selectedSymbols.contains(_currentSymbol)) {
+      if (settingsViewModel.selectedSymbols.isNotEmpty) {
+        _currentSymbol = settingsViewModel.selectedSymbols.first;
+      }
+    }
     _init();
   }
 
   Future<void> _init() async {
     _isLoading = true;
+    _datas = []; // Clear old data
     notifyListeners();
 
     await Future.wait([
@@ -321,6 +328,12 @@ class DashboardViewModel extends ChangeNotifier {
   Future<void> changeInterval(String interval) async {
     if (_currentInterval == interval) return;
     _currentInterval = interval;
+    await _init();
+  }
+
+  Future<void> changeSymbol(String symbol) async {
+    if (_currentSymbol == symbol) return;
+    _currentSymbol = symbol;
     await _init();
   }
 

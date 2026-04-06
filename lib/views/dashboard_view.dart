@@ -38,7 +38,7 @@ class DashboardView extends StatelessWidget {
             decoration: const BoxDecoration(gradient: BinanceTheme.darkGradient),
             child: Column(
               children: [
-                _buildIntervalSelector(viewModel),
+                _buildSelectors(viewModel),
                 Expanded(
                   child: viewModel.isLoading
                       ? const Center(
@@ -153,31 +153,81 @@ class DashboardView extends StatelessWidget {
     );
   }
 
-  Widget _buildIntervalSelector(DashboardViewModel viewModel) {
-    final intervals = ['1m', '5m', '15m', '1h', '4h', '1d'];
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+  Widget _buildSelectors(DashboardViewModel viewModel) {
+    final intervals = [
+      '1m', '3m', '5m', '15m', '30m',
+      '1h', '2h', '4h', '6h', '8h', '12h',
+      '1d', '3d', '1w', '1M'
+    ];
+    final symbols = viewModel.settingsViewModel.selectedSymbols;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Row(
-        children: intervals.map((interval) {
-          final isSelected = viewModel.currentInterval == interval;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: ChoiceChip(
-              label: Text(interval),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (selected) viewModel.changeInterval(interval);
-              },
-              selectedColor: BinanceTheme.yellow,
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.black : Colors.white,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        children: [
+          Expanded(
+            child: _buildDropdownContainer(
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: viewModel.currentSymbol,
+                  dropdownColor: BinanceTheme.surfaceColor,
+                  isExpanded: true,
+                  icon: const Icon(Icons.arrow_drop_down, color: BinanceTheme.yellow),
+                  items: symbols.map((symbol) {
+                    return DropdownMenuItem(
+                      value: symbol,
+                      child: Text(
+                        symbol,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) viewModel.changeSymbol(value);
+                  },
+                ),
               ),
             ),
-          );
-        }).toList(),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildDropdownContainer(
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: viewModel.currentInterval,
+                  dropdownColor: BinanceTheme.surfaceColor,
+                  isExpanded: true,
+                  icon: const Icon(Icons.timer, color: BinanceTheme.yellow, size: 18),
+                  items: intervals.map((interval) {
+                    return DropdownMenuItem(
+                      value: interval,
+                      child: Text(
+                        interval,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) viewModel.changeInterval(value);
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildDropdownContainer({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: BinanceTheme.surfaceColor.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: BinanceTheme.yellow.withValues(alpha: 0.1)),
+      ),
+      child: child,
     );
   }
 
