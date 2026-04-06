@@ -30,48 +30,11 @@ class BinanceTradeApp extends StatelessWidget {
         title: 'Binance Trade Tool',
         theme: BinanceTheme.darkTheme,
         debugShowCheckedModeBanner: false,
-        home: const MainShell(),
-      ),
-    );
-  }
-}
-
-class MainShell extends StatefulWidget {
-  const MainShell({super.key});
-
-  @override
-  State<MainShell> createState() => _MainShellState();
-}
-
-class _MainShellState extends State<MainShell> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _screens = [const DashboardView(), const SettingsView()];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: _screens),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const DashboardView(),
+          '/settings': (context) => const SettingsView(),
         },
-        backgroundColor: BinanceTheme.darkBackground,
-        selectedItemColor: BinanceTheme.yellow,
-        unselectedItemColor: BinanceTheme.secondaryTextColor,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
       ),
     );
   }

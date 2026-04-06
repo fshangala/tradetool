@@ -39,6 +39,7 @@ dependencies:
   http: ^1.6.0
   k_chart_plus: 1.0.4
   web_socket_channel: ^3.0.3
+  logger: ^2.7.0
 
 dev_dependencies:
   flutter_test:

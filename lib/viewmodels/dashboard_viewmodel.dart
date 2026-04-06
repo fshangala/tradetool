@@ -4,6 +4,7 @@ import 'package:k_chart_plus/k_chart_plus.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../services/binance_service.dart';
 import 'settings_viewmodel.dart';
+import '../core/logger.dart';
 
 class DashboardViewModel extends ChangeNotifier {
   final SettingsViewModel settingsViewModel;
@@ -22,17 +23,17 @@ class DashboardViewModel extends ChangeNotifier {
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
-  double get ema7 =>
-      _datas.isNotEmpty ? (_datas.last.emaValueList?[0] ?? 0.0) : 0.0;
-  double get ema25 =>
-      _datas.isNotEmpty ? (_datas.last.emaValueList?[1] ?? 0.0) : 0.0;
-  double get ema99 =>
-      _datas.isNotEmpty ? (_datas.last.emaValueList?[2] ?? 0.0) : 0.0;
-
   final List<MainIndicator> _mainIndicators = [
     EMAIndicator(calcParams: [7, 25, 99]),
+    BOLLIndicator(),
   ];
-  final List<SecondaryIndicator> _secondaryIndicators = [];
+  final List<SecondaryIndicator> _secondaryIndicators = [
+    MACDIndicator(),
+    RSIIndicator(),
+  ];
+
+  List<MainIndicator> get mainIndicators => _mainIndicators;
+  List<SecondaryIndicator> get secondaryIndicators => _secondaryIndicators;
 
   DashboardViewModel({required this.settingsViewModel}) {
     _binanceService = BinanceService(isTestnet: settingsViewModel.isTestnet);
@@ -70,7 +71,7 @@ class DashboardViewModel extends ChangeNotifier {
         _secondaryIndicators,
       );
     } catch (e) {
-      debugPrint('Error fetching history: $e');
+      logger.e('Error fetching history: $e');
     }
   }
 
