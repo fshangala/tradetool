@@ -6,6 +6,8 @@ class BinanceTheme {
   static const Color surfaceColor = Color(0xFF2B3139);
   static const Color textColor = Color(0xFFEAECEF);
   static const Color secondaryTextColor = Color(0xFF848E9C);
+  static const Color green = Color(0xFF0ECB81);
+  static const Color red = Color(0xFFF6465D);
 
   static ThemeData get darkTheme {
     return ThemeData(

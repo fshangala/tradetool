@@ -4,10 +4,12 @@ import 'package:k_chart_plus/k_chart_plus.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../services/binance_service.dart';
 import 'settings_viewmodel.dart';
+import 'notification_viewmodel.dart';
 import '../core/logger.dart';
 
 class DashboardViewModel extends ChangeNotifier {
   final SettingsViewModel settingsViewModel;
+  final NotificationViewModel notificationViewModel;
   late BinanceService _binanceService;
   WebSocketChannel? _wsChannel;
 
@@ -23,6 +25,15 @@ class DashboardViewModel extends ChangeNotifier {
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
+  double _availableBalance = 0.0;
+  double get availableBalance => _availableBalance;
+
+  List<dynamic> _positions = [];
+  List<dynamic> get positions => _positions;
+
+  Map<String, dynamic>? _accountInfo;
+  Map<String, dynamic>? get accountInfo => _accountInfo;
+
   final List<MainIndicator> _mainIndicators = [
     EMAIndicator(calcParams: [7, 25, 99]),
     BOLLIndicator(),
@@ -35,15 +46,30 @@ class DashboardViewModel extends ChangeNotifier {
   List<MainIndicator> get mainIndicators => _mainIndicators;
   List<SecondaryIndicator> get secondaryIndicators => _secondaryIndicators;
 
-  DashboardViewModel({required this.settingsViewModel}) {
-    _binanceService = BinanceService(isTestnet: settingsViewModel.isTestnet);
+  DashboardViewModel({
+    required this.settingsViewModel,
+    required this.notificationViewModel,
+  }) {
+    _updateBinanceService();
     _init();
 
     settingsViewModel.addListener(_onSettingsChanged);
   }
 
+  void _updateBinanceService() {
+    _binanceService = BinanceService(
+      isTestnet: settingsViewModel.isTestnet,
+      apiKey: settingsViewModel.isTestnet
+          ? settingsViewModel.testnetApiKey
+          : settingsViewModel.liveApiKey,
+      secretKey: settingsViewModel.isTestnet
+          ? settingsViewModel.testnetSecretKey
+          : settingsViewModel.liveSecretKey,
+    );
+  }
+
   void _onSettingsChanged() {
-    _binanceService = BinanceService(isTestnet: settingsViewModel.isTestnet);
+    _updateBinanceService();
     _init();
   }
 
@@ -51,11 +77,58 @@ class DashboardViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    await _fetchHistory();
+    await Future.wait([
+      _fetchHistory(),
+      _fetchAccountInfo(),
+    ]);
     _connectWebsocket();
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  Future<void> _fetchAccountInfo() async {
+    final key = settingsViewModel.isTestnet
+        ? settingsViewModel.testnetApiKey
+        : settingsViewModel.liveApiKey;
+    final secret = settingsViewModel.isTestnet
+        ? settingsViewModel.testnetSecretKey
+        : settingsViewModel.liveSecretKey;
+
+    if (key.isEmpty || secret.isEmpty) {
+      logger.i('API Keys not set, skipping account info fetch');
+      _accountInfo = null;
+      _availableBalance = 0.0;
+      _positions = [];
+      return;
+    }
+
+    try {
+      final results = await Future.wait([
+        _binanceService.fetchAccountInformation(),
+        _binanceService.fetchAccountConfig(),
+      ]);
+      
+      final accountInfoData = results[0];
+      final accountConfigData = results[1];
+      
+      // Merge config into account info
+      _accountInfo = {
+        ...accountInfoData,
+        ...accountConfigData,
+      };
+      
+      _availableBalance = double.tryParse(accountInfoData['availableBalance']?.toString() ?? '0') ?? 0.0;
+      _positions = (accountInfoData['positions'] as List<dynamic>)
+          .where((p) {
+            final amt = double.tryParse(p['positionAmt']?.toString() ?? '0') ?? 0.0;
+            return amt != 0;
+          })
+          .toList();
+    } catch (e) {
+      logger.e('Error fetching account info: $e');
+      notificationViewModel.error('Failed to load account info: $e');
+    }
   }
 
   Future<void> _fetchHistory() async {
@@ -72,6 +145,7 @@ class DashboardViewModel extends ChangeNotifier {
       );
     } catch (e) {
       logger.e('Error fetching history: $e');
+      notificationViewModel.error('Failed to load chart data: $e');
     }
   }
 
@@ -107,6 +181,51 @@ class DashboardViewModel extends ChangeNotifier {
     if (_currentInterval == interval) return;
     _currentInterval = interval;
     await _init();
+  }
+
+  Future<void> placeMarketOrder(String side) async {
+    if (_datas.isEmpty) return;
+
+    final currentPrice = _datas.last.close;
+    final marginToUse = _availableBalance * 0.4;
+    final quantity = marginToUse / currentPrice;
+
+    // Simple rounding for quantity (e.g., BTCUSDT usually supports 3 decimals)
+    // In a real app, we should fetch exchangeInfo for precision
+    final formattedQuantity = double.parse(quantity.toStringAsFixed(3));
+
+    if (formattedQuantity <= 0) {
+      logger.w('Calculated quantity is too small: $formattedQuantity');
+      notificationViewModel.error('Available margin too low for order');
+      return;
+    }
+
+    try {
+      final bool isHedgeMode = _accountInfo?['dualSidePosition'] ?? false;
+      String? positionSide;
+      if (isHedgeMode) {
+        positionSide = side == 'BUY' ? 'LONG' : 'SHORT';
+      } else {
+        positionSide = 'BOTH';
+      }
+
+      final response = await _binanceService.placeOrder(
+        symbol: _currentSymbol,
+        side: side,
+        type: 'MARKET',
+        quantity: formattedQuantity,
+        positionSide: positionSide,
+      );
+      logger.i('Order placed successfully: $response');
+      notificationViewModel.success(
+        '${side == 'BUY' ? 'Long' : 'Short'} order filled: $formattedQuantity $_currentSymbol',
+      );
+      await _fetchAccountInfo(); // Refresh positions and balance
+      notifyListeners();
+    } catch (e) {
+      logger.e('Error placing order: $e');
+      notificationViewModel.error('Failed to place order: $e');
+    }
   }
 
   Future<void> refresh() async {

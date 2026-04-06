@@ -4,7 +4,7 @@
 `tradetool` is a Flutter application for trading futures on the Binance platform. It utilizes the Binance API for live and testnet environments.
 
 - **Primary Technologies:** Flutter, Dart (SDK ^3.9.2).
-- **Core Dependencies:** `provider`, `shared_preferences`, `cupertino_icons`, `http`, `k_chart_plus`, `web_socket_channel`, `logger`.
+- **Core Dependencies:** `provider`, `shared_preferences`, `cupertino_icons`, `http`, `k_chart_plus`, `web_socket_channel`, `logger`, `crypto`.
 - **Architecture:** Strictly follow **MVVM (Model-View-ViewModel)** using the `provider` package.
 
 ## UI & Design Standards
@@ -12,7 +12,7 @@
 - **Primary Color:** Binance Yellow (`#F0B90B`).
 - **Aesthetic:** Modern design with gradients and transparent/glassmorphism objects.
 - **Material Design:** Follow Material 3 guidelines while incorporating the custom theme.
-- **Navigation:** Use named routes. Initial route is `/` (Dashboard), and `/settings` for the settings page.
+- **Navigation:** Use named routes. `/` (Dashboard), `/settings` (Settings), and `/profile` (Profile).
 
 ## Development Conventions
 - **State Management:** Use `ChangeNotifier` classes as ViewModels and provide them using `ChangeNotifierProvider`.
@@ -31,21 +31,24 @@
 - **Shell Commands:** Avoid using the `&&` operator in shell commands (e.g., in PowerShell). Use the `;` operator to chain multiple commands or run them sequentially.
 
 ## Current Status
-- **Navigation:** Refactored to a route-based flow. Removed the bottom navigation bar in favor of an `AppBar` action button for settings.
+- **Navigation:** Implemented route-based flow with Dashboard, Settings, and Profile views.
 - **Settings Page:** Implemented UI for API keys (API Key, Secret Key) for both Live and Testnet, including network toggle and persistence.
-- **Dashboard:** Implemented live K-line chart with real-time WebSocket updates and EMA indicators (7, 25, 99) rendered directly on the chart.
-- **Logging:** Integrated `logger` package and replaced `debugPrint` with structured logging.
+- **Dashboard:** Implemented live K-line chart with real-time WebSocket updates, Long/Short trading buttons (40% margin), and real-time open positions tracking.
+- **Profile Page:** Displays comprehensive account information including total balances, unrealized PnL, available margin, assets list, and account configuration flags.
+- **Notifications:** Integrated a non-intrusive, auto-dismissing notification system for order status and API errors.
+- **Security:** Implemented HMAC SHA256 signing for authenticated API requests.
+- **Robustness:** Added safe data parsing and null safety checks across all components to prevent crashes from malformed API responses.
 
 ## Planned Features
-- **Trading Operations:** Implement Open/Close position functionality (Market/Limit orders).
-- **Position Tracking:** Real-time monitoring of open positions, PnL, and margin.
-- **Account Balance:** Display available balance for the selected network.
+- **Trading Operations:** Implement Close position functionality.
+- **Enhanced Orders:** Support for Limit orders, Stop Loss, and Take Profit.
+- **Historical Data:** View trade history and transaction logs.
 
 ## Key Files
 - `lib/main.dart`: Entry point with route configuration and top-level providers.
 - `lib/core/logger.dart`: Global logger configuration.
-- `lib/services/binance_service.dart`: Core logic for Binance API and WebSockets.
-- `lib/viewmodels/`: MVVM ViewModels for state management.
+- `lib/services/binance_service.dart`: Core logic for Binance API, WebSockets, and HMAC signing.
+- `lib/viewmodels/`: MVVM ViewModels for state management (Dashboard, Settings, Notification).
 - `lib/views/`: UI implementation following the glassmorphism aesthetic.
 - `pubspec.yaml`: Dependencies and project metadata.
 - `README.md`: High-level project documentation.

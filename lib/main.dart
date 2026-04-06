@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import 'core/theme.dart';
 import 'viewmodels/settings_viewmodel.dart';
 import 'viewmodels/dashboard_viewmodel.dart';
+import 'viewmodels/notification_viewmodel.dart';
 import 'views/settings_view.dart';
 import 'views/dashboard_view.dart';
+import 'views/profile_view.dart';
 
 void main() {
   runApp(const BinanceTradeApp());
@@ -18,12 +20,18 @@ class BinanceTradeApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => SettingsViewModel()),
-        ChangeNotifierProxyProvider<SettingsViewModel, DashboardViewModel>(
+        ChangeNotifierProvider(create: (_) => NotificationViewModel()),
+        ChangeNotifierProxyProvider2<SettingsViewModel, NotificationViewModel, DashboardViewModel>(
           create: (context) => DashboardViewModel(
             settingsViewModel: context.read<SettingsViewModel>(),
+            notificationViewModel: context.read<NotificationViewModel>(),
           ),
-          update: (context, settings, previous) =>
-              previous ?? DashboardViewModel(settingsViewModel: settings),
+          update: (context, settings, notification, previous) =>
+              previous ??
+              DashboardViewModel(
+                settingsViewModel: settings,
+                notificationViewModel: notification,
+              ),
         ),
       ],
       child: MaterialApp(
@@ -34,6 +42,7 @@ class BinanceTradeApp extends StatelessWidget {
         routes: {
           '/': (context) => const DashboardView(),
           '/settings': (context) => const SettingsView(),
+          '/profile': (context) => const ProfileView(),
         },
       ),
     );
