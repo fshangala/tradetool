@@ -7,8 +7,10 @@ This tool provides a streamlined, high-performance interface for futures traders
 
 ## Key Features
 - **Real-time Charting:** Live K-line (candlestick) charts with technical indicators (EMA, BOLL, MACD, RSI) and WebSocket updates.
+- **Position Chart Integration:** Visualize open position entry prices directly on the K-line chart.
 - **One-Click Trading:** Execute Long or Short market orders using a pre-configured percentage of available margin (default 40%).
-- **Position Tracking:** Monitor open positions, entry prices, mark prices, and unrealized PnL in real-time.
+- **Instant Position Exit:** Quick "Close Position" button to exit trades at market price with a single confirmation.
+- **Independent Position Tracking:** Real-time monitoring of open positions, entry prices, mark prices, and unrealized PnL, with dedicated refresh controls.
 - **Dual Network Support:** Toggle between Binance Testnet and Live network with independent API key management.
 - **Detailed Account Profile:** Comprehensive view of wallet balances, asset breakdown, and account configuration flags (Position Mode, Multi-Assets Mode, etc.).
 - **Smart Notifications:** Non-intrusive, auto-dismissing notifications for order confirmations and API errors.

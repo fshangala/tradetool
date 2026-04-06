@@ -53,7 +53,7 @@ class DashboardView extends StatelessWidget {
                             children: [
                               _buildChart(viewModel),
                               _buildTradeButtons(context, viewModel),
-                              _buildPositions(viewModel),
+                              _buildPositions(context, viewModel),
                             ],
                           ),
                         ),
@@ -205,116 +205,186 @@ class DashboardView extends StatelessWidget {
     );
   }
 
-  Widget _buildPositions(DashboardViewModel viewModel) {
-    if (viewModel.positions.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(32.0),
-        child: Center(
-          child: Text(
-            'No open positions',
-            style: TextStyle(color: BinanceTheme.secondaryTextColor),
-          ),
-        ),
-      );
-    }
-
+  Widget _buildPositions(BuildContext context, DashboardViewModel viewModel) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Text(
-            'Open Positions',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: BinanceTheme.yellow,
-            ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Open Positions',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: BinanceTheme.yellow,
+                ),
+              ),
+              if (viewModel.isPositionsLoading)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: BinanceTheme.yellow,
+                  ),
+                )
+              else
+                IconButton(
+                  icon: const Icon(
+                    Icons.refresh,
+                    size: 20,
+                    color: BinanceTheme.yellow,
+                  ),
+                  onPressed: viewModel.refreshPositions,
+                ),
+            ],
           ),
         ),
-        ...viewModel.positions.map((position) {
-          final amt = double.tryParse(position['positionAmt']?.toString() ?? '0') ?? 0.0;
-          final entryPrice = double.tryParse(position['entryPrice']?.toString() ?? '0') ?? 0.0;
-          final markPrice = double.tryParse(position['markPrice']?.toString() ?? '0') ?? 0.0;
-          final pnl = double.tryParse(position['unrealizedProfit']?.toString() ?? '0') ?? 0.0;
-          final isLong = amt > 0;
-          final symbol = position['symbol']?.toString() ?? 'Unknown';
-
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: BinanceTheme.surfaceColor.withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isLong
-                    ? BinanceTheme.green.withValues(alpha: 0.2)
-                    : BinanceTheme.red.withValues(alpha: 0.2),
+        if (viewModel.positions.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(32.0),
+            child: Center(
+              child: Text(
+                'No open positions',
+                style: TextStyle(color: BinanceTheme.secondaryTextColor),
               ),
             ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          symbol,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isLong
-                                ? BinanceTheme.green.withValues(alpha: 0.2)
-                                : BinanceTheme.red.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            isLong ? 'LONG' : 'SHORT',
-                            style: TextStyle(
-                              color: isLong
-                                  ? BinanceTheme.green
-                                  : BinanceTheme.red,
-                              fontSize: 12,
+          )
+        else
+          ...viewModel.positions.map((position) {
+            final amt = double.tryParse(position['positionAmt']?.toString() ?? '0') ?? 0.0;
+            final entryPrice = double.tryParse(position['entryPrice']?.toString() ?? '0') ?? 0.0;
+            final markPrice = double.tryParse(position['markPrice']?.toString() ?? '0') ?? 0.0;
+            final pnl = double.tryParse(position['unRealizedProfit']?.toString() ?? '0') ?? 0.0;
+            final isLong = amt > 0;
+            final symbol = position['symbol']?.toString() ?? 'Unknown';
+
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: BinanceTheme.surfaceColor.withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isLong
+                      ? BinanceTheme.green.withValues(alpha: 0.2)
+                      : BinanceTheme.red.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            symbol,
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      '${pnl >= 0 ? '+' : ''}${pnl.toStringAsFixed(2)} USDT',
-                      style: TextStyle(
-                        color: pnl >= 0 ? BinanceTheme.green : BinanceTheme.red,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isLong
+                                  ? BinanceTheme.green.withValues(alpha: 0.2)
+                                  : BinanceTheme.red.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              isLong ? 'LONG' : 'SHORT',
+                              style: TextStyle(
+                                color: isLong
+                                    ? BinanceTheme.green
+                                    : BinanceTheme.red,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildPosDetail('Size', '${amt.abs()}'),
-                    _buildPosDetail('Entry', entryPrice.toStringAsFixed(2)),
-                    _buildPosDetail('Mark', markPrice.toStringAsFixed(2)),
-                  ],
-                ),
-              ],
-            ),
-          );
-        }),
+                      Text(
+                        '${pnl >= 0 ? '+' : ''}${pnl.toStringAsFixed(2)} USDT',
+                        style: TextStyle(
+                          color: pnl >= 0 ? BinanceTheme.green : BinanceTheme.red,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildPosDetail('Size', '${amt.abs()}'),
+                      _buildPosDetail('Entry', entryPrice.toStringAsFixed(2)),
+                      _buildPosDetail('Mark', markPrice.toStringAsFixed(2)),
+                      ElevatedButton(
+                        onPressed: () => _showCloseConfirmation(context, viewModel, position),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: BinanceTheme.red.withValues(alpha: 0.2),
+                          foregroundColor: BinanceTheme.red,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                          minimumSize: const Size(60, 30),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text('Close', style: TextStyle(fontSize: 12)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
       ],
+    );
+  }
+
+  void _showCloseConfirmation(
+    BuildContext context,
+    DashboardViewModel viewModel,
+    Map<String, dynamic> position,
+  ) {
+    final symbol = position['symbol'];
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: BinanceTheme.surfaceColor,
+        title: const Text('Confirm Close Position', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Are you sure you want to close your position for $symbol at market price?',
+          style: const TextStyle(color: BinanceTheme.secondaryTextColor),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              viewModel.closePosition(position);
+              Navigator.pop(context);
+            },
+            child: const Text(
+              'Close Position',
+              style: TextStyle(color: BinanceTheme.red, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

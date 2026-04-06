@@ -7,6 +7,60 @@ import 'settings_viewmodel.dart';
 import 'notification_viewmodel.dart';
 import '../core/logger.dart';
 
+class PositionIndicator extends MainIndicator<KLineEntity, MAStyle> {
+  final List<double> entryPrices;
+
+  PositionIndicator({required this.entryPrices})
+      : super(
+          name: 'POS',
+          shortName: 'POS',
+          indicatorStyle: const MAStyle(),
+          calcParams: [],
+        );
+
+  @override
+  void calc(List<KLineEntity> data) {}
+
+  @override
+  void drawChart(
+    KLineEntity lastData,
+    KLineEntity curData,
+    double lastX,
+    double curX,
+    double Function(double) getLineY,
+    Canvas canvas,
+    KChartColors chartColors,
+  ) {
+    for (var price in entryPrices) {
+      final y = getLineY(price);
+      canvas.drawLine(
+        Offset(lastX, y),
+        Offset(curX, y),
+        Paint()
+          ..color = Colors.green.withValues(alpha: 0.7)
+          ..strokeWidth = 1.0
+          ..style = PaintingStyle.stroke,
+      );
+    }
+  }
+
+  @override
+  TextSpan? drawFigure(KLineEntity data, int index, KChartColors chartColors) {
+    return null;
+  }
+
+  @override
+  (double, double) getMaxMinValue(KLineEntity data, double min, double max) {
+    double newMin = min;
+    double newMax = max;
+    for (var price in entryPrices) {
+      if (price < newMin) newMin = price;
+      if (price > newMax) newMax = price;
+    }
+    return (newMin, newMax);
+  }
+}
+
 class DashboardViewModel extends ChangeNotifier {
   final SettingsViewModel settingsViewModel;
   final NotificationViewModel notificationViewModel;
@@ -25,6 +79,9 @@ class DashboardViewModel extends ChangeNotifier {
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
+  bool _isPositionsLoading = false;
+  bool get isPositionsLoading => _isPositionsLoading;
+
   double _availableBalance = 0.0;
   double get availableBalance => _availableBalance;
 
@@ -34,7 +91,7 @@ class DashboardViewModel extends ChangeNotifier {
   Map<String, dynamic>? _accountInfo;
   Map<String, dynamic>? get accountInfo => _accountInfo;
 
-  final List<MainIndicator> _mainIndicators = [
+  List<MainIndicator> _mainIndicators = [
     EMAIndicator(calcParams: [7, 25, 99]),
     BOLLIndicator(),
   ];
@@ -80,6 +137,7 @@ class DashboardViewModel extends ChangeNotifier {
     await Future.wait([
       _fetchHistory(),
       _fetchAccountInfo(),
+      _fetchPositions(),
     ]);
     _connectWebsocket();
 
@@ -99,7 +157,6 @@ class DashboardViewModel extends ChangeNotifier {
       logger.i('API Keys not set, skipping account info fetch');
       _accountInfo = null;
       _availableBalance = 0.0;
-      _positions = [];
       return;
     }
 
@@ -112,22 +169,106 @@ class DashboardViewModel extends ChangeNotifier {
       final accountInfoData = results[0];
       final accountConfigData = results[1];
       
-      // Merge config into account info
       _accountInfo = {
         ...accountInfoData,
         ...accountConfigData,
       };
       
       _availableBalance = double.tryParse(accountInfoData['availableBalance']?.toString() ?? '0') ?? 0.0;
-      _positions = (accountInfoData['positions'] as List<dynamic>)
-          .where((p) {
-            final amt = double.tryParse(p['positionAmt']?.toString() ?? '0') ?? 0.0;
-            return amt != 0;
-          })
-          .toList();
     } catch (e) {
       logger.e('Error fetching account info: $e');
       notificationViewModel.error('Failed to load account info: $e');
+    }
+  }
+
+  Future<void> _fetchPositions() async {
+    final key = settingsViewModel.isTestnet
+        ? settingsViewModel.testnetApiKey
+        : settingsViewModel.liveApiKey;
+    final secret = settingsViewModel.isTestnet
+        ? settingsViewModel.testnetSecretKey
+        : settingsViewModel.liveSecretKey;
+
+    if (key.isEmpty || secret.isEmpty) {
+      _positions = [];
+      return;
+    }
+
+    _isPositionsLoading = true;
+    notifyListeners();
+
+    try {
+      final positionRisk = await _binanceService.fetchPositionRisk();
+      _positions = positionRisk.where((p) {
+        final amt = double.tryParse(p['positionAmt']?.toString() ?? '0') ?? 0.0;
+        return amt != 0;
+      }).toList();
+
+      _updateChartIndicators();
+    } catch (e) {
+      logger.e('Error fetching positions: $e');
+      notificationViewModel.error('Failed to load positions: $e');
+    } finally {
+      _isPositionsLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void _updateChartIndicators() {
+    final symbolPositions = _positions.where((p) => p['symbol'] == _currentSymbol).toList();
+    final entryPrices = symbolPositions
+        .map((p) => double.tryParse(p['entryPrice']?.toString() ?? '0') ?? 0.0)
+        .where((price) => price > 0)
+        .toList();
+
+    _mainIndicators = [
+      EMAIndicator(calcParams: [7, 25, 99]),
+      BOLLIndicator(),
+    ];
+
+    if (entryPrices.isNotEmpty) {
+      _mainIndicators.add(PositionIndicator(entryPrices: entryPrices));
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshPositions() async {
+    await _fetchPositions();
+  }
+
+  Future<void> closePosition(Map<String, dynamic> position) async {
+    final symbol = position['symbol'];
+    final amt = double.tryParse(position['positionAmt']?.toString() ?? '0') ?? 0.0;
+    if (amt == 0) return;
+
+    final side = amt > 0 ? 'SELL' : 'BUY';
+    final quantity = amt.abs();
+    final positionSide = position['positionSide'] ?? 'BOTH';
+
+    try {
+      _isPositionsLoading = true;
+      notifyListeners();
+
+      final response = await _binanceService.placeOrder(
+        symbol: symbol,
+        side: side,
+        type: 'MARKET',
+        quantity: quantity,
+        positionSide: positionSide,
+      );
+
+      logger.i('Position closed successfully: $response');
+      notificationViewModel.success('Position closed for $symbol');
+      
+      await Future.wait([
+        _fetchPositions(),
+        _fetchAccountInfo(),
+      ]);
+    } catch (e) {
+      logger.e('Error closing position: $e');
+      notificationViewModel.error('Failed to close position: $e');
+      _isPositionsLoading = false;
+      notifyListeners();
     }
   }
 

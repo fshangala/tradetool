@@ -38,9 +38,11 @@
 - **Notifications:** Integrated a non-intrusive, auto-dismissing notification system for order status and API errors.
 - **Security:** Implemented HMAC SHA256 signing for authenticated API requests.
 - **Robustness:** Added safe data parsing and null safety checks across all components to prevent crashes from malformed API responses.
+- **Independent Positions Management:** Implemented independent fetching of open positions using the `/fapi/v3/positionRisk` endpoint.
+- **Dashboard Enhancements:** Added a dedicated refresh button for positions and integrated open position entry prices into the candlestick chart.
+- **Trading Operations:** Implemented "Close Position" functionality for instant market exit.
 
 ## Planned Features
-- **Trading Operations:** Implement Close position functionality.
 - **Enhanced Orders:** Support for Limit orders, Stop Loss, and Take Profit.
 - **Historical Data:** View trade history and transaction logs.
 

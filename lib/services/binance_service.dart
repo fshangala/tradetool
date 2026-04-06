@@ -76,6 +76,35 @@ class BinanceService {
     }
   }
 
+  Future<List<dynamic>> fetchPositionRisk({String? symbol}) async {
+    if (apiKey == null || secretKey == null) {
+      throw Exception('API Key and Secret Key are required');
+    }
+
+    final int timestamp = DateTime.now().millisecondsSinceEpoch;
+    final Map<String, String> params = {
+      'timestamp': timestamp.toString(),
+      'recvWindow': '60000',
+    };
+    if (symbol != null) params['symbol'] = symbol.toUpperCase();
+
+    final String queryString = Uri(queryParameters: params).query;
+    final String signature = _generateSignature(queryString);
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/fapi/v3/positionRisk?$queryString&signature=$signature'),
+      headers: {
+        'X-MBX-APIKEY': apiKey!,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load position risk: ${response.body}');
+    }
+  }
+
   Future<Map<String, dynamic>> placeOrder({
     required String symbol,
     required String side,
@@ -84,6 +113,7 @@ class BinanceService {
     double? price,
     String? timeInForce,
     String? positionSide,
+    bool? reduceOnly,
   }) async {
     if (apiKey == null || secretKey == null) {
       throw Exception('API Key and Secret Key are required');
@@ -102,6 +132,7 @@ class BinanceService {
     if (price != null) params['price'] = price.toString();
     if (timeInForce != null) params['timeInForce'] = timeInForce;
     if (positionSide != null) params['positionSide'] = positionSide.toUpperCase();
+    if (reduceOnly == true) params['reduceOnly'] = 'true';
 
     final String queryString = Uri(queryParameters: params).query;
     final String signature = _generateSignature(queryString);
