@@ -30,7 +30,10 @@ class BinanceTheme {
         iconTheme: IconThemeData(color: textColor),
       ),
       textTheme: const TextTheme(
-        headlineMedium: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+        headlineMedium: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+        ),
         bodyLarge: TextStyle(color: textColor),
         bodyMedium: TextStyle(color: secondaryTextColor),
       ),
@@ -38,9 +41,7 @@ class BinanceTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: yellow,
           foregroundColor: Colors.black,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           textStyle: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),

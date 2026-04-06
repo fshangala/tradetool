@@ -29,38 +29,38 @@ class SettingsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setLiveApiKey(String value) async {
+  void setLiveApiKey(String value) {
     _liveApiKey = value;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(AppConstants.keyLiveApiKey, value);
     notifyListeners();
   }
 
-  Future<void> setLiveSecretKey(String value) async {
+  void setLiveSecretKey(String value) {
     _liveSecretKey = value;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(AppConstants.keyLiveSecretKey, value);
     notifyListeners();
   }
 
-  Future<void> setTestnetApiKey(String value) async {
+  void setTestnetApiKey(String value) {
     _testnetApiKey = value;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(AppConstants.keyTestnetApiKey, value);
     notifyListeners();
   }
 
-  Future<void> setTestnetSecretKey(String value) async {
+  void setTestnetSecretKey(String value) {
     _testnetSecretKey = value;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(AppConstants.keyTestnetSecretKey, value);
     notifyListeners();
   }
 
-  Future<void> setNetworkMode(bool isTestnet) async {
+  void setNetworkMode(bool isTestnet) {
     _isTestnet = isTestnet;
+    notifyListeners();
+  }
+
+  Future<void> saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(AppConstants.keyIsTestnet, isTestnet);
+    await prefs.setString(AppConstants.keyLiveApiKey, _liveApiKey);
+    await prefs.setString(AppConstants.keyLiveSecretKey, _liveSecretKey);
+    await prefs.setString(AppConstants.keyTestnetApiKey, _testnetApiKey);
+    await prefs.setString(AppConstants.keyTestnetSecretKey, _testnetSecretKey);
+    await prefs.setBool(AppConstants.keyIsTestnet, _isTestnet);
     notifyListeners();
   }
 }

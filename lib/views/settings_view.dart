@@ -4,21 +4,49 @@ import 'package:provider/provider.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../core/theme.dart';
 
-class SettingsView extends StatelessWidget {
+class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
+
+  @override
+  State<SettingsView> createState() => _SettingsViewState();
+}
+
+class _SettingsViewState extends State<SettingsView> {
+  final TextEditingController _testnetApiKeyController =
+      TextEditingController();
+  final TextEditingController _testnetSecretKeyController =
+      TextEditingController();
+  final TextEditingController _liveApiKeyController = TextEditingController();
+  final TextEditingController _liveSecretKeyController =
+      TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final viewModel = context.read<SettingsViewModel>();
+    _testnetApiKeyController.text = viewModel.testnetApiKey;
+    _testnetSecretKeyController.text = viewModel.testnetSecretKey;
+    _liveApiKeyController.text = viewModel.liveApiKey;
+    _liveSecretKeyController.text = viewModel.liveSecretKey;
+  }
+
+  @override
+  void dispose() {
+    _testnetApiKeyController.dispose();
+    _testnetSecretKeyController.dispose();
+    _liveApiKeyController.dispose();
+    _liveSecretKeyController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<SettingsViewModel>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: BinanceTheme.darkGradient,
-        ),
+        decoration: const BoxDecoration(gradient: BinanceTheme.darkGradient),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -33,13 +61,13 @@ class SettingsView extends StatelessWidget {
                   children: [
                     _buildTextField(
                       label: 'Testnet API Key',
-                      value: viewModel.testnetApiKey,
+                      controller: _testnetApiKeyController,
                       onChanged: viewModel.setTestnetApiKey,
                     ),
                     const SizedBox(height: 16),
                     _buildTextField(
                       label: 'Testnet Secret Key',
-                      value: viewModel.testnetSecretKey,
+                      controller: _testnetSecretKeyController,
                       onChanged: viewModel.setTestnetSecretKey,
                       isPassword: true,
                     ),
@@ -54,19 +82,49 @@ class SettingsView extends StatelessWidget {
                   children: [
                     _buildTextField(
                       label: 'Live API Key',
-                      value: viewModel.liveApiKey,
+                      controller: _liveApiKeyController,
                       onChanged: viewModel.setLiveApiKey,
                     ),
                     const SizedBox(height: 16),
                     _buildTextField(
                       label: 'Live Secret Key',
-                      value: viewModel.liveSecretKey,
+                      controller: _liveSecretKeyController,
                       onChanged: viewModel.setLiveSecretKey,
                       isPassword: true,
                     ),
                   ],
                 ),
               ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    await viewModel.saveSettings();
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Settings saved successfully'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.save),
+                  label: const Text(
+                    'Save Settings',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BinanceTheme.yellow,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -96,16 +154,13 @@ class SettingsView extends StatelessWidget {
             children: [
               const Text(
                 'Network Mode',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               Text(
-                viewModel.isTestnet ? 'Testnet Enabled' : 'Live Network Enabled',
-                style: const TextStyle(
-                  color: BinanceTheme.secondaryTextColor,
-                ),
+                viewModel.isTestnet
+                    ? 'Testnet Enabled'
+                    : 'Live Network Enabled',
+                style: const TextStyle(color: BinanceTheme.secondaryTextColor),
               ),
             ],
           ),
@@ -141,7 +196,7 @@ class SettingsView extends StatelessWidget {
 
   Widget _buildTextField({
     required String label,
-    required String value,
+    required TextEditingController controller,
     required Function(String) onChanged,
     bool isPassword = false,
   }) {
@@ -157,13 +212,16 @@ class SettingsView extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         TextFormField(
-          initialValue: value,
+          controller: controller,
           onChanged: onChanged,
           obscureText: isPassword,
           style: const TextStyle(color: BinanceTheme.textColor),
           decoration: InputDecoration(
             hintText: 'Enter $label',
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
           ),
         ),
       ],
