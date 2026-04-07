@@ -140,7 +140,7 @@ class DashboardViewModel extends ChangeNotifier {
   AccountConfig? get accountConfig => _accountConfig;
 
   List<MainIndicator> _mainIndicators = [
-    MAIndicator(calcParams: [7, 25, 99]),
+    EMAIndicator(calcParams: [7, 25, 99]),
     BOLLIndicator(),
   ];
   final List<SecondaryIndicator> _secondaryIndicators = [
@@ -631,23 +631,19 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   double _getIndicatorValue(String name, KLineEntity entity) {
-    if (entity.maValueList != null) {
-       // logger.v('maValueList: ${entity.maValueList}');
-    }
-    
     switch (name) {
       case 'RSI':
         return entity.rsi ?? 50.0;
       case 'EMA7':
-        final val = entity.maValueList != null && entity.maValueList!.isNotEmpty ? entity.maValueList![0] : null;
+        final val = entity.emaValueList != null && entity.emaValueList!.isNotEmpty ? entity.emaValueList![0] : null;
         if (val == null || val == 0) return entity.close;
         return val;
       case 'EMA25':
-        final val = entity.maValueList != null && entity.maValueList!.length > 1 ? entity.maValueList![1] : null;
+        final val = entity.emaValueList != null && entity.emaValueList!.length > 1 ? entity.emaValueList![1] : null;
         if (val == null || val == 0) return entity.close;
         return val;
       case 'EMA99':
-        final val = entity.maValueList != null && entity.maValueList!.length > 2 ? entity.maValueList![2] : null;
+        final val = entity.emaValueList != null && entity.emaValueList!.length > 2 ? entity.emaValueList![2] : null;
         if (val == null || val == 0) return entity.close;
         return val;
       default:
