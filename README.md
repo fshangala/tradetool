@@ -13,7 +13,9 @@ This tool provides a streamlined, high-performance interface for futures traders
 - **Automated Trading Strategies:** Create and manage custom strategies with sophisticated entry and exit logic.
     - **Dual-Side Support:** Define independent conditions for Long and Short entries/exits within the same strategy.
     - **Integrated Protection:** Configure Take Profit and Stop Loss directly in the entry settings for immediate placement upon order fill.
-    - **Dynamic Comparisons:** Compare price or indicators against other indicators (e.g., "Close > EMA25").
+    - **Expanded Indicators:** Supports **RSI**, **EMA** (7, 25, 99), **Bollinger Bands** (UP, MB, DN), and **MACD** (Histogram, DIF, DEA).
+    - **Accurate Evaluation:** Accurate evaluation of technical indicators using specialized data lists (e.g., `emaValueList`).
+    - **Dynamic Comparisons:** Compare price or indicators against other indicators (e.g., "Price < DN" or "DIF > DEA").
     - **Customizable Wallet Usage:** Allocate 1-80% of available wallet balance per strategy.
 - **Dashboard Automation:** Optimized for hands-free trading with automated strategy execution and a "Retry" mechanism for failed API actions.
 - **Algo Order Service:** Utilizes Binance's specialized Algo Order API for reliable automated protection.

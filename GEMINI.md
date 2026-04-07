@@ -48,7 +48,9 @@
 - **Automated Trading Strategies:** Implemented a sophisticated dual-side strategy engine.
     - **Separate Long/Short Conditions:** Define independent entry and exit conditions for Long and Short positions within the same strategy.
     - **Integrated Protection:** Move Take Profit and Stop Loss settings directly into the entry phase for immediate placement upon order fill.
-    - **Dynamic Comparisons:** Support for comparing price or indicators against other indicators (e.g., "Close > EMA25").
+    - **Expanded Indicators:** Full support for **RSI**, **EMA** (7, 25, 99), **Bollinger Bands** (UP, MB, DN), and **MACD** (Histogram, DIF, DEA) in conditions.
+    - **Accurate EMA Logic:** Utilizes `EMAIndicator` with `emaValueList` for precise EMA7, EMA25, and EMA99 evaluation.
+    - **Dynamic Comparisons:** Support for comparing price or indicators against other indicators (e.g., "Price < DN" or "DIF > DEA").
     - **Customizable Wallet Usage:** Specify 1-80% of available wallet balance for each strategy entry.
 - **Algo Order Support:** Integrated Binance's specialized Algo Order Service (`/fapi/v1/algoOrder`) for automated protection orders.
 - **Dashboard Refinement:** Removed manual trade buttons to focus on automated execution; added a dynamic **Retry** button for failed strategy actions (Entry, Protection, or Exit).
