@@ -140,7 +140,7 @@ class DashboardViewModel extends ChangeNotifier {
   AccountConfig? get accountConfig => _accountConfig;
 
   List<MainIndicator> _mainIndicators = [
-    EMAIndicator(calcParams: [7, 25, 99]),
+    MAIndicator(calcParams: [7, 25, 99]),
     BOLLIndicator(),
   ];
   final List<SecondaryIndicator> _secondaryIndicators = [
@@ -277,8 +277,13 @@ class DashboardViewModel extends ChangeNotifier {
 
     if (entryPrices.isNotEmpty) {
       _mainIndicators.add(PositionIndicator(entryPrices: entryPrices));
-      notifyListeners();
     }
+    
+    // Re-calculate indicators since _mainIndicators has changed
+    if (_datas.isNotEmpty) {
+      DataUtil.calculateIndicators(_datas, _mainIndicators, _secondaryIndicators);
+    }
+    notifyListeners();
   }
 
   Future<void> refreshPositions() async {
@@ -365,6 +370,7 @@ class DashboardViewModel extends ChangeNotifier {
         );
 
         _runStrategyEvaluation(_currentSymbol);
+        logger.d('WebSocket update for $_currentSymbol: price=${newEntity.close}');
 
         notifyListeners();
       }
@@ -378,9 +384,13 @@ class DashboardViewModel extends ChangeNotifier {
     if (strategyId == null) return;
 
     final strategy = strategyViewModel.getStrategyById(strategyId);
-    if (strategy == null) return;
+    if (strategy == null) {
+      logger.w('Strategy $strategyId not found for $symbol');
+      return;
+    }
 
     final phase = _activeStrategyPhases[symbol] ?? 'entry';
+    logger.d('Evaluating strategy ${strategy.name} for $symbol (Phase: $phase)');
 
     if (phase == 'entry') {
       _processEntryPhase(symbol, strategy);
@@ -392,13 +402,20 @@ class DashboardViewModel extends ChangeNotifier {
   Future<void> _processEntryPhase(String symbol, Strategy strategy) async {
     final hasPosition = _positions.any((p) => p.symbol == symbol);
     if (hasPosition) {
+      logger.d('Already have position for $symbol, moving to exit phase');
       _activeStrategyPhases[symbol] = 'exit';
+      notifyListeners();
       return;
     }
 
-    if (_evaluatePhase(strategy.longEntry.conditions, _datas)) {
+    final longMet = _evaluatePhase(strategy.longEntry.conditions, _datas);
+    final shortMet = _evaluatePhase(strategy.shortEntry.conditions, _datas);
+
+    logger.d('Entry evaluation for $symbol: Long=$longMet, Short=$shortMet');
+
+    if (longMet) {
       await _executeEntry(symbol, strategy, 'BUY', strategy.longEntry);
-    } else if (_evaluatePhase(strategy.shortEntry.conditions, _datas)) {
+    } else if (shortMet) {
       await _executeEntry(symbol, strategy, 'SELL', strategy.shortEntry);
     }
   }
@@ -575,13 +592,21 @@ class DashboardViewModel extends ChangeNotifier {
       rightValue = condition.value;
     }
 
-    switch (condition.op) {
+    final met = _checkOperator(condition.op, leftValue, rightValue, condition, data);
+    
+    logger.d('Condition: ${condition.type == ConditionType.price ? "Price" : condition.indicatorName} ${condition.op.name} ${condition.targetIndicatorName ?? condition.value} | Left: $leftValue, Right: $rightValue | Result: $met');
+    
+    return met;
+  }
+
+  bool _checkOperator(Operator op, double left, double right, Condition condition, List<KLineEntity> data) {
+    switch (op) {
       case Operator.greaterThan:
-        return leftValue > rightValue;
+        return left > right;
       case Operator.lessThan:
-        return leftValue < rightValue;
+        return left < right;
       case Operator.equal:
-        return leftValue == rightValue;
+        return left == right;
       case Operator.crossesAbove:
         if (data.length < 2) return false;
         final prevData = data[data.length - 2];
@@ -591,7 +616,7 @@ class DashboardViewModel extends ChangeNotifier {
         final prevRight = condition.targetIndicatorName != null
             ? _getIndicatorValue(condition.targetIndicatorName!, prevData)
             : condition.value;
-        return prevLeft <= prevRight && leftValue > rightValue;
+        return prevLeft <= prevRight && left > right;
       case Operator.crossesBelow:
         if (data.length < 2) return false;
         final prevData = data[data.length - 2];
@@ -601,20 +626,30 @@ class DashboardViewModel extends ChangeNotifier {
         final prevRight = condition.targetIndicatorName != null
             ? _getIndicatorValue(condition.targetIndicatorName!, prevData)
             : condition.value;
-        return prevLeft >= prevRight && leftValue < rightValue;
+        return prevLeft >= prevRight && left < right;
     }
   }
 
   double _getIndicatorValue(String name, KLineEntity entity) {
+    if (entity.maValueList != null) {
+       // logger.v('maValueList: ${entity.maValueList}');
+    }
+    
     switch (name) {
       case 'RSI':
         return entity.rsi ?? 50.0;
       case 'EMA7':
-        return entity.maValueList?[0] ?? entity.close;
+        final val = entity.maValueList != null && entity.maValueList!.isNotEmpty ? entity.maValueList![0] : null;
+        if (val == null || val == 0) return entity.close;
+        return val;
       case 'EMA25':
-        return entity.maValueList?[1] ?? entity.close;
+        final val = entity.maValueList != null && entity.maValueList!.length > 1 ? entity.maValueList![1] : null;
+        if (val == null || val == 0) return entity.close;
+        return val;
       case 'EMA99':
-        return entity.maValueList?[2] ?? entity.close;
+        final val = entity.maValueList != null && entity.maValueList!.length > 2 ? entity.maValueList![2] : null;
+        if (val == null || val == 0) return entity.close;
+        return val;
       default:
         return entity.close;
     }
