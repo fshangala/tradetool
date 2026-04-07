@@ -373,7 +373,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                     dropdownColor: Colors.grey[850],
                     isExpanded: true,
                     style: const TextStyle(color: Colors.white),
-                    items: ['RSI', 'EMA7', 'EMA25', 'EMA99'].map((name) {
+                    items: ['RSI', 'EMA7', 'EMA25', 'EMA99', 'UP', 'MB', 'DN', 'MACD', 'DIF', 'DEA'].map((name) {
                       return DropdownMenuItem(value: name, child: Text(name));
                     }).toList(),
                     onChanged: (val) => setDialogState(() => selectedIndicator = val!),
@@ -415,7 +415,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                     dropdownColor: Colors.grey[850],
                     isExpanded: true,
                     style: const TextStyle(color: Colors.white),
-                    items: ['RSI', 'EMA7', 'EMA25', 'EMA99'].map((name) {
+                    items: ['RSI', 'EMA7', 'EMA25', 'EMA99', 'UP', 'MB', 'DN', 'MACD', 'DIF', 'DEA'].map((name) {
                       return DropdownMenuItem(value: name, child: Text(name));
                     }).toList(),
                     onChanged: (val) => setDialogState(() => targetIndicator = val!),

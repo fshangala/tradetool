@@ -646,6 +646,18 @@ class DashboardViewModel extends ChangeNotifier {
         final val = entity.emaValueList != null && entity.emaValueList!.length > 2 ? entity.emaValueList![2] : null;
         if (val == null || val == 0) return entity.close;
         return val;
+      case 'UP':
+        return entity.boll?.up ?? entity.close;
+      case 'MB':
+        return entity.boll?.mid ?? entity.close;
+      case 'DN':
+        return entity.boll?.dn ?? entity.close;
+      case 'MACD':
+        return entity.macd ?? 0.0;
+      case 'DIF':
+        return entity.dif ?? 0.0;
+      case 'DEA':
+        return entity.dea ?? 0.0;
       default:
         return entity.close;
     }
