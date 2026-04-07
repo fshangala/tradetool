@@ -14,6 +14,8 @@ class Condition {
   final List<dynamic>? params;
   final Operator op;
   final double value;
+  final ConditionType targetType;
+  final String? targetIndicatorName;
 
   Condition({
     required this.type,
@@ -21,6 +23,8 @@ class Condition {
     this.params,
     required this.op,
     required this.value,
+    this.targetType = ConditionType.price, // Default for backward compatibility
+    this.targetIndicatorName,
   });
 
   factory Condition.fromJson(Map<String, dynamic> json) {
@@ -30,6 +34,10 @@ class Condition {
       params: json['params'],
       op: Operator.values.firstWhere((e) => e.name == json['op']),
       value: (json['value'] as num).toDouble(),
+      targetType: json['targetType'] != null
+          ? ConditionType.values.firstWhere((e) => e.name == json['targetType'])
+          : ConditionType.price, // If null, assume it's comparing with 'value' which was old behavior
+      targetIndicatorName: json['targetIndicatorName'],
     );
   }
 
@@ -40,6 +48,8 @@ class Condition {
       'params': params,
       'op': op.name,
       'value': value,
+      'targetType': targetType.name,
+      'targetIndicatorName': targetIndicatorName,
     };
   }
 }

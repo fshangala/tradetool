@@ -46,6 +46,7 @@
 - **Type-safe Data Modeling:** Created structured Dart models (`AccountInformation`, `AccountConfig`, `PositionRisk`, `OrderResponse`, `Trade`) for all Binance API responses to provide a single source of truth and improve type safety.
 - **Service Refactoring:** Refactored `BinanceService` to use these structured models and added comprehensive DartDoc documentation for all methods.
 - **Automated Trading Strategies:** Implemented a three-phase strategy engine (Entry, Protection, Exit) with a management UI. Strategies can be defined using multiple conditions (Price, RSI, EMA) and include automated Take Profit and Stop Loss placement.
+- **Enhanced Strategy Conditions:** Added support for dynamic comparisons in strategy conditions, allowing price or indicators to be compared against other indicators (e.g., "Close > EMA25").
 ## Planned Features
 - **Enhanced Orders:** Support for Limit orders, Stop Loss, and Take Profit.
 

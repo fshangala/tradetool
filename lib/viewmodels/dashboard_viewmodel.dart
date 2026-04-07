@@ -473,33 +473,45 @@ class DashboardViewModel extends ChangeNotifier {
   bool _evaluateCondition(Condition condition, List<KLineEntity> data) {
     if (data.isEmpty) return false;
 
-    double actualValue;
+    double leftValue;
     if (condition.type == ConditionType.price) {
-      actualValue = data.last.close;
+      leftValue = data.last.close;
     } else {
-      // Extract indicator value
-      actualValue = _getIndicatorValue(condition.indicatorName!, data.last);
+      leftValue = _getIndicatorValue(condition.indicatorName!, data.last);
+    }
+
+    double rightValue;
+    if (condition.targetIndicatorName != null) {
+      rightValue = _getIndicatorValue(condition.targetIndicatorName!, data.last);
+    } else {
+      rightValue = condition.value;
     }
 
     switch (condition.op) {
       case Operator.greaterThan:
-        return actualValue > condition.value;
+        return leftValue > rightValue;
       case Operator.lessThan:
-        return actualValue < condition.value;
+        return leftValue < rightValue;
       case Operator.equal:
-        return actualValue == condition.value;
+        return leftValue == rightValue;
       case Operator.crossesAbove:
         if (data.length < 2) return false;
-        final prevValue = condition.type == ConditionType.price 
+        final prevLeft = condition.type == ConditionType.price 
             ? data[data.length - 2].close 
             : _getIndicatorValue(condition.indicatorName!, data[data.length - 2]);
-        return prevValue <= condition.value && actualValue > condition.value;
+        final prevRight = condition.targetIndicatorName != null
+            ? _getIndicatorValue(condition.targetIndicatorName!, data[data.length - 2])
+            : condition.value;
+        return prevLeft <= prevRight && leftValue > rightValue;
       case Operator.crossesBelow:
         if (data.length < 2) return false;
-        final prevValue = condition.type == ConditionType.price 
+        final prevLeft = condition.type == ConditionType.price 
             ? data[data.length - 2].close 
             : _getIndicatorValue(condition.indicatorName!, data[data.length - 2]);
-        return prevValue >= condition.value && actualValue < condition.value;
+        final prevRight = condition.targetIndicatorName != null
+            ? _getIndicatorValue(condition.targetIndicatorName!, data[data.length - 2])
+            : condition.value;
+        return prevLeft >= prevRight && leftValue < rightValue;
     }
   }
 

@@ -206,11 +206,9 @@ class _StrategyEditViewState extends State<StrategyEditView> {
 
   String _conditionToString(Condition c) {
     final opStr = _opToSymbol(c.op);
-    if (c.type == ConditionType.price) {
-      return 'Price $opStr ${c.value}';
-    } else {
-      return '${c.indicatorName} $opStr ${c.value}';
-    }
+    String leftSide = c.type == ConditionType.price ? 'Price' : c.indicatorName!;
+    String rightSide = c.targetIndicatorName ?? c.value.toString();
+    return '$leftSide $opStr $rightSide';
   }
 
   String _opToSymbol(Operator op) {
@@ -227,6 +225,10 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     ConditionType selectedType = ConditionType.indicator;
     String selectedIndicator = 'RSI';
     Operator selectedOp = Operator.lessThan;
+    
+    // Comparison target state
+    bool isComparingWithIndicator = false;
+    String targetIndicator = 'EMA25';
     final valueController = TextEditingController();
 
     showDialog(
@@ -238,7 +240,9 @@ class _StrategyEditViewState extends State<StrategyEditView> {
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const Text('Source', style: TextStyle(color: Color(0xFFF0B90B), fontSize: 12)),
                 DropdownButton<ConditionType>(
                   value: selectedType,
                   dropdownColor: Colors.grey[850],
@@ -260,6 +264,8 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                     }).toList(),
                     onChanged: (val) => setDialogState(() => selectedIndicator = val!),
                   ),
+                const SizedBox(height: 16),
+                const Text('Operator', style: TextStyle(color: Color(0xFFF0B90B), fontSize: 12)),
                 DropdownButton<Operator>(
                   value: selectedOp,
                   dropdownColor: Colors.grey[850],
@@ -270,15 +276,46 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                   }).toList(),
                   onChanged: (val) => setDialogState(() => selectedOp = val!),
                 ),
-                TextField(
-                  controller: valueController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Value',
-                    labelStyle: TextStyle(color: Colors.white70),
-                  ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Compare with', style: TextStyle(color: Color(0xFFF0B90B), fontSize: 12)),
+                    Row(
+                      children: [
+                        const Text('Value', style: TextStyle(color: Colors.white54, fontSize: 10)),
+                        Switch(
+                          value: isComparingWithIndicator,
+                          activeThumbColor: const Color(0xFFF0B90B),
+                          activeTrackColor: const Color(0xFFF0B90B).withValues(alpha: 0.5),
+                          onChanged: (val) => setDialogState(() => isComparingWithIndicator = val),
+                        ),
+                        const Text('Indicator', style: TextStyle(color: Colors.white54, fontSize: 10)),
+                      ],
+                    ),
+                  ],
                 ),
+                if (isComparingWithIndicator)
+                  DropdownButton<String>(
+                    value: targetIndicator,
+                    dropdownColor: Colors.grey[850],
+                    isExpanded: true,
+                    style: const TextStyle(color: Colors.white),
+                    items: ['RSI', 'EMA7', 'EMA25', 'EMA99'].map((name) {
+                      return DropdownMenuItem(value: name, child: Text(name));
+                    }).toList(),
+                    onChanged: (val) => setDialogState(() => targetIndicator = val!),
+                  )
+                else
+                  TextField(
+                    controller: valueController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Constant Value',
+                      labelStyle: TextStyle(color: Colors.white70),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -289,8 +326,12 @@ class _StrategyEditViewState extends State<StrategyEditView> {
             ),
             TextButton(
               onPressed: () {
-                final value = double.tryParse(valueController.text);
-                if (value == null) return;
+                double value = 0;
+                if (!isComparingWithIndicator) {
+                  final parsed = double.tryParse(valueController.text);
+                  if (parsed == null) return;
+                  value = parsed;
+                }
 
                 setState(() {
                   conditions.add(Condition(
@@ -298,6 +339,8 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                     indicatorName: selectedType == ConditionType.indicator ? selectedIndicator : null,
                     op: selectedOp,
                     value: value,
+                    targetType: isComparingWithIndicator ? ConditionType.indicator : ConditionType.price, // value is just a constant
+                    targetIndicatorName: isComparingWithIndicator ? targetIndicator : null,
                   ));
                 });
                 Navigator.pop(context);
