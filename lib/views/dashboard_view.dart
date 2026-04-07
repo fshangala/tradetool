@@ -20,6 +20,10 @@ class DashboardView extends StatelessWidget {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.psychology, color: BinanceTheme.yellow),
+            onPressed: () => Navigator.pushNamed(context, '/strategies'),
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: viewModel.refresh,
           ),
@@ -44,6 +48,7 @@ class DashboardView extends StatelessWidget {
             child: Column(
               children: [
                 _buildSelectors(viewModel),
+                _buildStrategySelector(viewModel),
                 Expanded(
                   child: viewModel.isLoading
                       ? const Center(
@@ -233,6 +238,81 @@ class DashboardView extends StatelessWidget {
         border: Border.all(color: BinanceTheme.yellow.withValues(alpha: 0.1)),
       ),
       child: child,
+    );
+  }
+
+  Widget _buildStrategySelector(DashboardViewModel viewModel) {
+    final strategies = viewModel.strategyViewModel.strategies;
+    final activeId = viewModel.getActiveStrategyId(viewModel.currentSymbol);
+    final activePhase = viewModel.getActiveStrategyPhase(viewModel.currentSymbol);
+    final isLocked = viewModel.isSymbolLocked(viewModel.currentSymbol);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildDropdownContainer(
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String?>(
+                  value: activeId,
+                  dropdownColor: BinanceTheme.surfaceColor,
+                  isExpanded: true,
+                  hint: const Text('Select Strategy', style: TextStyle(color: Colors.white54, fontSize: 14)),
+                  disabledHint: Text(
+                    strategies.firstWhere((s) => s.id == activeId, orElse: () => strategies.first).name,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                  icon: const Icon(Icons.psychology, color: BinanceTheme.yellow, size: 18),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Manual Trading', style: TextStyle(color: Colors.white54, fontSize: 14)),
+                    ),
+                    ...strategies.map((strategy) {
+                      return DropdownMenuItem<String?>(
+                        value: strategy.id,
+                        child: Text(
+                          strategy.name,
+                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                        ),
+                      );
+                    }),
+                  ],
+                  onChanged: isLocked ? null : (value) {
+                    viewModel.setStrategyForSymbol(viewModel.currentSymbol, value);
+                  },
+                ),
+              ),
+            ),
+          ),
+          if (activeId != null) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              decoration: BoxDecoration(
+                color: BinanceTheme.yellow.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: BinanceTheme.yellow.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.auto_mode, color: BinanceTheme.yellow, size: 14),
+                  const SizedBox(width: 4),
+                  Text(
+                    activePhase.toUpperCase(),
+                    style: const TextStyle(
+                      color: BinanceTheme.yellow,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 

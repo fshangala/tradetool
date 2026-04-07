@@ -134,15 +134,21 @@ class BinanceService {
   /// [timeInForce] GTC, IOC, FOK (for LIMIT orders).
   /// [positionSide] 'BOTH' for One-way Mode, 'LONG' or 'SHORT' for Hedge Mode.
   /// [reduceOnly] Set to true if the order is intended to only reduce an existing position.
+  /// [stopPrice] Used with STOP/STOP_MARKET/TAKE_PROFIT/TAKE_PROFIT_MARKET orders.
+  /// [closePosition] A value of true with STOP_MARKET or TAKE_PROFIT_MARKET will close the position.
+  /// [workingType] stopPrice triggered by: "MARK_PRICE", "CONTRACT_PRICE". Default "CONTRACT_PRICE".
   Future<OrderResponse> placeOrder({
     required String symbol,
     required String side,
     required String type,
     double? quantity,
     double? price,
+    double? stopPrice,
     String? timeInForce,
     String? positionSide,
     bool? reduceOnly,
+    bool? closePosition,
+    String? workingType,
   }) async {
     if (apiKey == null || secretKey == null) {
       throw Exception('API Key and Secret Key are required');
@@ -159,9 +165,12 @@ class BinanceService {
 
     if (quantity != null) params['quantity'] = quantity.toString();
     if (price != null) params['price'] = price.toString();
+    if (stopPrice != null) params['stopPrice'] = stopPrice.toString();
     if (timeInForce != null) params['timeInForce'] = timeInForce;
     if (positionSide != null) params['positionSide'] = positionSide.toUpperCase();
     if (reduceOnly == true) params['reduceOnly'] = 'true';
+    if (closePosition == true) params['closePosition'] = 'true';
+    if (workingType != null) params['workingType'] = workingType.toUpperCase();
 
     final String queryString = Uri(queryParameters: params).query;
     final String signature = _generateSignature(queryString);

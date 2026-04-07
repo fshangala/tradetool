@@ -8,6 +8,8 @@ import '../models/account_config.dart';
 import '../models/position_risk.dart';
 import 'settings_viewmodel.dart';
 import 'notification_viewmodel.dart';
+import 'strategy_viewmodel.dart';
+import '../models/strategy.dart';
 import '../core/logger.dart';
 
 class PositionIndicator extends MainIndicator<KLineEntity, MAStyle> {
@@ -67,8 +69,33 @@ class PositionIndicator extends MainIndicator<KLineEntity, MAStyle> {
 class DashboardViewModel extends ChangeNotifier {
   final SettingsViewModel settingsViewModel;
   final NotificationViewModel notificationViewModel;
+  final StrategyViewModel strategyViewModel;
   late BinanceService _binanceService;
   WebSocketChannel? _wsChannel;
+
+  // Strategy Execution State
+  final Map<String, String?> _activeStrategyIds = {}; // symbol -> strategyId
+  final Map<String, String> _activeStrategyPhases = {}; // symbol -> phase (entry, protection, exit)
+  
+  String? getActiveStrategyId(String symbol) => _activeStrategyIds[symbol];
+  String getActiveStrategyPhase(String symbol) => _activeStrategyPhases[symbol] ?? 'none';
+
+  void setStrategyForSymbol(String symbol, String? strategyId) {
+    if (isSymbolLocked(symbol)) return;
+    _activeStrategyIds[symbol] = strategyId;
+    if (strategyId != null) {
+      _activeStrategyPhases[symbol] = 'entry';
+    } else {
+      _activeStrategyPhases.remove(symbol);
+    }
+    notifyListeners();
+  }
+
+  bool isSymbolLocked(String symbol) {
+    // Locked if there's an active position AND a strategy was selected
+    final hasPosition = _positions.any((p) => p.symbol == symbol);
+    return hasPosition && _activeStrategyIds[symbol] != null;
+  }
 
   List<KLineEntity> _datas = [];
   List<KLineEntity> get datas => _datas;
@@ -112,6 +139,7 @@ class DashboardViewModel extends ChangeNotifier {
   DashboardViewModel({
     required this.settingsViewModel,
     required this.notificationViewModel,
+    required this.strategyViewModel,
   }) {
     _updateBinanceService();
     _init();
@@ -319,9 +347,175 @@ class DashboardViewModel extends ChangeNotifier {
           _mainIndicators,
           _secondaryIndicators,
         );
+
+        // Run strategy evaluation
+        _runStrategyEvaluation(_currentSymbol);
+
         notifyListeners();
       }
     });
+  }
+
+  void _runStrategyEvaluation(String symbol) {
+    final strategyId = _activeStrategyIds[symbol];
+    if (strategyId == null) return;
+
+    final strategy = strategyViewModel.getStrategyById(strategyId);
+    if (strategy == null) return;
+
+    final phase = _activeStrategyPhases[symbol] ?? 'entry';
+
+    if (phase == 'entry') {
+      _processEntryPhase(symbol, strategy);
+    } else if (phase == 'protection') {
+      _processProtectionPhase(symbol, strategy);
+    } else if (phase == 'exit') {
+      _processExitPhase(symbol, strategy);
+    }
+  }
+
+  Future<void> _processEntryPhase(String symbol, Strategy strategy) async {
+    // Only entry if no position is open for this symbol
+    final hasPosition = _positions.any((p) => p.symbol == symbol);
+    if (hasPosition) {
+      _activeStrategyPhases[symbol] = 'protection';
+      return;
+    }
+
+    if (_evaluatePhase(strategy.entryPhase, _datas)) {
+      logger.i('Entry conditions met for $symbol using ${strategy.name}');
+      // For MVP, always Long. In a real app, Strategy should define side.
+      await placeMarketOrder('BUY');
+      _activeStrategyPhases[symbol] = 'protection';
+      notifyListeners();
+    }
+  }
+
+  Future<void> _processProtectionPhase(String symbol, Strategy strategy) async {
+    final positions = _positions.where((p) => p.symbol == symbol).toList();
+    if (positions.isEmpty) return;
+
+    final position = positions.first;
+    final entryPrice = position.entryPrice;
+    if (entryPrice <= 0) return;
+
+    final isLong = position.positionAmt > 0;
+    final tpPercent = strategy.protectionPhase.takeProfitPercentage / 100;
+    final slPercent = strategy.protectionPhase.stopLossPercentage / 100;
+
+    final tpPrice = isLong ? entryPrice * (1 + tpPercent) : entryPrice * (1 - tpPercent);
+    final slPrice = isLong ? entryPrice * (1 - slPercent) : entryPrice * (1 + slPercent);
+
+    try {
+      logger.i('Setting protection for $symbol: TP at $tpPrice, SL at $slPrice');
+      
+      // Place Take Profit Market order
+      await _binanceService.placeOrder(
+        symbol: symbol,
+        side: isLong ? 'SELL' : 'BUY',
+        type: 'TAKE_PROFIT_MARKET',
+        stopPrice: double.parse(tpPrice.toStringAsFixed(2)),
+        closePosition: true,
+        workingType: 'MARK_PRICE',
+        positionSide: position.positionSide,
+      );
+
+      // Place Stop Loss Market order
+      await _binanceService.placeOrder(
+        symbol: symbol,
+        side: isLong ? 'SELL' : 'BUY',
+        type: 'STOP_MARKET',
+        stopPrice: double.parse(slPrice.toStringAsFixed(2)),
+        closePosition: true,
+        workingType: 'MARK_PRICE',
+        positionSide: position.positionSide,
+      );
+
+      _activeStrategyPhases[symbol] = 'exit';
+      notificationViewModel.success('Protection orders placed for $symbol');
+      notifyListeners();
+    } catch (e) {
+      logger.e('Error placing protection orders: $e');
+      // If protection fails, we still move to exit phase to monitor conditions
+      _activeStrategyPhases[symbol] = 'exit';
+    }
+  }
+
+  Future<void> _processExitPhase(String symbol, Strategy strategy) async {
+    final positions = _positions.where((p) => p.symbol == symbol).toList();
+    if (positions.isEmpty) {
+      // Position closed (likely by TP/SL or manually)
+      _activeStrategyIds.remove(symbol);
+      _activeStrategyPhases.remove(symbol);
+      notifyListeners();
+      return;
+    }
+
+    if (_evaluatePhase(strategy.exitPhase, _datas)) {
+      logger.i('Exit conditions met for $symbol using ${strategy.name}');
+      await closePosition(positions.first);
+      _activeStrategyIds.remove(symbol);
+      _activeStrategyPhases.remove(symbol);
+      notifyListeners();
+    }
+  }
+
+  bool _evaluatePhase(StrategyPhase phase, List<KLineEntity> data) {
+    if (phase.conditions.isEmpty) return false;
+    
+    // Always AND for now
+    for (var condition in phase.conditions) {
+      if (!_evaluateCondition(condition, data)) return false;
+    }
+    return true;
+  }
+
+  bool _evaluateCondition(Condition condition, List<KLineEntity> data) {
+    if (data.isEmpty) return false;
+
+    double actualValue;
+    if (condition.type == ConditionType.price) {
+      actualValue = data.last.close;
+    } else {
+      // Extract indicator value
+      actualValue = _getIndicatorValue(condition.indicatorName!, data.last);
+    }
+
+    switch (condition.op) {
+      case Operator.greaterThan:
+        return actualValue > condition.value;
+      case Operator.lessThan:
+        return actualValue < condition.value;
+      case Operator.equal:
+        return actualValue == condition.value;
+      case Operator.crossesAbove:
+        if (data.length < 2) return false;
+        final prevValue = condition.type == ConditionType.price 
+            ? data[data.length - 2].close 
+            : _getIndicatorValue(condition.indicatorName!, data[data.length - 2]);
+        return prevValue <= condition.value && actualValue > condition.value;
+      case Operator.crossesBelow:
+        if (data.length < 2) return false;
+        final prevValue = condition.type == ConditionType.price 
+            ? data[data.length - 2].close 
+            : _getIndicatorValue(condition.indicatorName!, data[data.length - 2]);
+        return prevValue >= condition.value && actualValue < condition.value;
+    }
+  }
+
+  double _getIndicatorValue(String name, KLineEntity entity) {
+    switch (name) {
+      case 'RSI':
+        return entity.rsi ?? 50.0;
+      case 'EMA7':
+        return entity.maValueList?[0] ?? entity.close; // maValueList typically contains EMAs/MAs depending on setup
+      case 'EMA25':
+        return entity.maValueList?[1] ?? entity.close;
+      case 'EMA99':
+        return entity.maValueList?[2] ?? entity.close;
+      default:
+        return entity.close;
+    }
   }
 
   Future<void> changeInterval(String interval) async {
