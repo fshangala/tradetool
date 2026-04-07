@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/binance_service.dart';
 import '../models/account_info.dart';
 import '../models/account_config.dart';
@@ -88,7 +89,18 @@ class DashboardViewModel extends ChangeNotifier {
     } else {
       _activeStrategyPhases.remove(symbol);
     }
+    _updateWakelock();
     notifyListeners();
+  }
+
+  void _updateWakelock() {
+    final bool anyActive = _activeStrategyIds.values.any((id) => id != null);
+    WakelockPlus.toggle(enable: anyActive);
+    if (anyActive) {
+      logger.i('Wakelock enabled: automated strategy is running');
+    } else {
+      logger.i('Wakelock disabled: no automated strategies running');
+    }
   }
 
   bool isSymbolLocked(String symbol) {
@@ -181,6 +193,7 @@ class DashboardViewModel extends ChangeNotifier {
       _fetchPositions(),
     ]);
     _connectWebsocket();
+    _updateWakelock();
 
     _isLoading = false;
     notifyListeners();
@@ -447,6 +460,7 @@ class DashboardViewModel extends ChangeNotifier {
       // Position closed (likely by TP/SL or manually)
       _activeStrategyIds.remove(symbol);
       _activeStrategyPhases.remove(symbol);
+      _updateWakelock();
       notifyListeners();
       return;
     }
@@ -456,6 +470,7 @@ class DashboardViewModel extends ChangeNotifier {
       await closePosition(positions.first);
       _activeStrategyIds.remove(symbol);
       _activeStrategyPhases.remove(symbol);
+      _updateWakelock();
       notifyListeners();
     }
   }
@@ -595,6 +610,7 @@ class DashboardViewModel extends ChangeNotifier {
   void dispose() {
     _wsChannel?.sink.close();
     settingsViewModel.removeListener(_onSettingsChanged);
+    WakelockPlus.disable(); // Force disable on dispose
     super.dispose();
   }
 }
