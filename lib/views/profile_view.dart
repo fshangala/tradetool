@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/dashboard_viewmodel.dart';
+import '../models/account_info.dart';
+import '../models/account_config.dart';
 import '../core/theme.dart';
 
 class ProfileView extends StatelessWidget {
@@ -10,6 +12,7 @@ class ProfileView extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewModel = context.watch<DashboardViewModel>();
     final accountInfo = viewModel.accountInfo;
+    final accountConfig = viewModel.accountConfig;
 
     return Scaffold(
       appBar: AppBar(
@@ -58,21 +61,21 @@ class ProfileView extends StatelessWidget {
                   _buildSummaryCard(accountInfo),
                   const SizedBox(height: 20),
                   _buildSectionTitle('Assets'),
-                  _buildAssetsList(accountInfo['assets'] as List<dynamic>),
+                  _buildAssetsList(accountInfo.assets),
                   const SizedBox(height: 20),
                   _buildSectionTitle('Account Flags'),
-                  _buildAccountFlags(accountInfo),
+                  _buildAccountFlags(accountInfo, accountConfig),
                 ],
               ),
       ),
     );
   }
 
-  Widget _buildSummaryCard(Map<String, dynamic> accountInfo) {
-    final totalWalletBalance = double.tryParse(accountInfo['totalWalletBalance']?.toString() ?? '0') ?? 0.0;
-    final totalUnrealizedProfit = double.tryParse(accountInfo['totalUnrealizedProfit']?.toString() ?? '0') ?? 0.0;
-    final totalMarginBalance = double.tryParse(accountInfo['totalMarginBalance']?.toString() ?? '0') ?? 0.0;
-    final availableBalance = double.tryParse(accountInfo['availableBalance']?.toString() ?? '0') ?? 0.0;
+  Widget _buildSummaryCard(AccountInformation accountInfo) {
+    final totalWalletBalance = accountInfo.totalWalletBalance;
+    final totalUnrealizedProfit = accountInfo.totalUnrealizedProfit;
+    final totalMarginBalance = accountInfo.totalMarginBalance;
+    final availableBalance = accountInfo.availableBalance;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -154,12 +157,9 @@ class ProfileView extends StatelessWidget {
     );
   }
 
-  Widget _buildAssetsList(List<dynamic> assets) {
+  Widget _buildAssetsList(List<AccountAsset> assets) {
     final filteredAssets = assets
-        .where((asset) {
-          final balance = double.tryParse(asset['walletBalance']?.toString() ?? '0') ?? 0.0;
-          return balance > 0;
-        })
+        .where((asset) => asset.walletBalance > 0)
         .toList();
 
     if (filteredAssets.isEmpty) {
@@ -170,8 +170,8 @@ class ProfileView extends StatelessWidget {
 
     return Column(
       children: filteredAssets.map((asset) {
-        final walletBalance = double.tryParse(asset['walletBalance']?.toString() ?? '0') ?? 0.0;
-        final marginBalance = double.tryParse(asset['marginBalance']?.toString() ?? '0') ?? 0.0;
+        final walletBalance = asset.walletBalance;
+        final marginBalance = asset.marginBalance;
         
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
@@ -184,7 +184,7 @@ class ProfileView extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                asset['asset']?.toString() ?? 'Unknown',
+                asset.asset,
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               Column(
@@ -207,18 +207,18 @@ class ProfileView extends StatelessWidget {
     );
   }
 
-  Widget _buildAccountFlags(Map<String, dynamic> accountInfo) {
+  Widget _buildAccountFlags(AccountInformation accountInfo, AccountConfig? accountConfig) {
     final flags = {
-      'Can Deposit': accountInfo['canDeposit'],
-      'Can Trade': accountInfo['canTrade'],
-      'Can Withdraw': accountInfo['canWithdraw'],
-      'Multi-Assets Mode': accountInfo['multiAssetsMargin'],
-      'Hedge Mode': accountInfo['dualSidePosition'],
+      'Can Deposit': accountInfo.canDeposit,
+      'Can Trade': accountInfo.canTrade,
+      'Can Withdraw': accountInfo.canWithdraw,
+      'Multi-Assets Mode': accountConfig?.multiAssetsMargin ?? false,
+      'Hedge Mode': accountConfig?.dualSidePosition ?? false,
     };
 
     final otherConfigs = {
-      'Fee Tier': accountInfo['feeTier']?.toString() ?? '0',
-      'Trade Group ID': accountInfo['tradeGroupId']?.toString() ?? '-1',
+      'Fee Tier': accountInfo.feeTier.toString(),
+      'Update Time': DateTime.fromMillisecondsSinceEpoch(accountInfo.updateTime).toString().split('.').first,
     };
 
     return Column(

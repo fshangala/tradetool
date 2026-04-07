@@ -4,7 +4,12 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
 import 'package:crypto/crypto.dart';
 import '../models/trade.dart';
+import '../models/account_info.dart';
+import '../models/account_config.dart';
+import '../models/position_risk.dart';
+import '../models/order_response.dart';
 
+/// Service class to interact with the Binance Futures API.
 class BinanceService {
   static const String liveBaseUrl = 'https://fapi.binance.com';
   static const String testnetBaseUrl = 'https://demo-fapi.binance.com';
@@ -20,8 +25,10 @@ class BinanceService {
     this.secretKey,
   });
 
+  /// Returns the base URL based on the environment (Live or Testnet).
   String get baseUrl => isTestnet ? testnetBaseUrl : liveBaseUrl;
 
+  /// Generates an HMAC SHA256 signature for authenticated requests.
   String _generateSignature(String queryString) {
     if (secretKey == null) return '';
     final key = utf8.encode(secretKey!);
@@ -31,7 +38,10 @@ class BinanceService {
     return digest.toString();
   }
 
-  Future<Map<String, dynamic>> fetchAccountInformation() async {
+  /// Fetches account information including balances and assets.
+  ///
+  /// Throws an [Exception] if API keys are missing or the request fails.
+  Future<AccountInformation> fetchAccountInformation() async {
     if (apiKey == null || secretKey == null) {
       throw Exception('API Key and Secret Key are required');
     }
@@ -48,13 +58,16 @@ class BinanceService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      return AccountInformation.fromJson(jsonDecode(response.body));
     } else {
       throw Exception('Failed to load account information: ${response.body}');
     }
   }
 
-  Future<Map<String, dynamic>> fetchAccountConfig() async {
+  /// Fetches account configuration settings like position mode (Hedge/One-way).
+  ///
+  /// Throws an [Exception] if API keys are missing or the request fails.
+  Future<AccountConfig> fetchAccountConfig() async {
     if (apiKey == null || secretKey == null) {
       throw Exception('API Key and Secret Key are required');
     }
@@ -71,13 +84,17 @@ class BinanceService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      return AccountConfig.fromJson(jsonDecode(response.body));
     } else {
       throw Exception('Failed to load account config: ${response.body}');
     }
   }
 
-  Future<List<dynamic>> fetchPositionRisk({String? symbol}) async {
+  /// Fetches risk information for open positions.
+  ///
+  /// [symbol] Optional symbol to filter positions.
+  /// Throws an [Exception] if API keys are missing or the request fails.
+  Future<List<PositionRisk>> fetchPositionRisk({String? symbol}) async {
     if (apiKey == null || secretKey == null) {
       throw Exception('API Key and Secret Key are required');
     }
@@ -100,13 +117,24 @@ class BinanceService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((item) => PositionRisk.fromJson(item)).toList();
     } else {
       throw Exception('Failed to load position risk: ${response.body}');
     }
   }
 
-  Future<Map<String, dynamic>> placeOrder({
+  /// Places a new order on the Binance Futures exchange.
+  ///
+  /// [symbol] The trading pair (e.g., BTCUSDT).
+  /// [side] 'BUY' or 'SELL'.
+  /// [type] Order type (e.g., 'MARKET', 'LIMIT').
+  /// [quantity] Order quantity.
+  /// [price] Order price (required for LIMIT orders).
+  /// [timeInForce] GTC, IOC, FOK (for LIMIT orders).
+  /// [positionSide] 'BOTH' for One-way Mode, 'LONG' or 'SHORT' for Hedge Mode.
+  /// [reduceOnly] Set to true if the order is intended to only reduce an existing position.
+  Future<OrderResponse> placeOrder({
     required String symbol,
     required String side,
     required String type,
@@ -146,12 +174,15 @@ class BinanceService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      return OrderResponse.fromJson(jsonDecode(response.body));
     } else {
       throw Exception('Failed to place order: ${response.body}');
     }
   }
 
+  /// Fetches a list of available trading symbols from the exchange.
+  ///
+  /// Filters for symbols that are TRADING, PERPETUAL, and end with USDT.
   Future<List<String>> fetchExchangeInfo() async {
     final response = await http.get(Uri.parse('$baseUrl/fapi/v1/exchangeInfo'));
 
@@ -168,6 +199,11 @@ class BinanceService {
     }
   }
 
+  /// Fetches historical candlestick data (K-lines) for a symbol.
+  ///
+  /// [symbol] The trading pair.
+  /// [interval] Time interval (e.g., '1m', '15m', '1h').
+  /// [limit] Number of bars to fetch (max 1500, default 500).
   Future<List<KLineEntity>> fetchKlines({
     required String symbol,
     required String interval,
@@ -187,6 +223,7 @@ class BinanceService {
     }
   }
 
+  /// Establishes a WebSocket connection for real-time K-line updates.
   WebSocketChannel establishKlineWebsocket(String symbol, String interval) {
     final channel = WebSocketChannel.connect(
       Uri.parse('$wsUrl/${symbol.toLowerCase()}@kline_$interval'),
@@ -194,6 +231,7 @@ class BinanceService {
     return channel;
   }
 
+  /// Maps a raw K-line list from the REST API to a [KLineEntity].
   KLineEntity _mapToKLineEntity(List<dynamic> item) {
     return KLineEntity.fromCustom(
       open: double.parse(item[1].toString()),
@@ -206,6 +244,7 @@ class BinanceService {
     );
   }
 
+  /// Maps a raw K-line map from the WebSocket stream to a [KLineEntity].
   KLineEntity mapWsToKLineEntity(Map<String, dynamic> k) {
     return KLineEntity.fromCustom(
       open: double.parse(k['o'].toString()),
@@ -218,6 +257,9 @@ class BinanceService {
     );
   }
 
+  /// Fetches the authenticated user's trade history.
+  ///
+  /// [symbol] Optional symbol to filter trades.
   Future<List<Trade>> fetchUserTrades({String? symbol}) async {
     if (apiKey == null || secretKey == null) {
       throw Exception('API Key and Secret Key are required');

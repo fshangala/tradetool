@@ -43,6 +43,8 @@
 - **Trading Operations:** Implemented "Close Position" functionality for instant market exit.
 - **Customizable Pair Management:** Added a settings section to fetch, select, and persist a personalized list of trading pairs using `SharedPreferences`.
 - **Trade History:** Implemented a dedicated trade history page fetching data from `/fapi/v1/userTrades`, with detailed modal views for each transaction and dashboard integration.
+- **Type-safe Data Modeling:** Created structured Dart models (`AccountInformation`, `AccountConfig`, `PositionRisk`, `OrderResponse`, `Trade`) for all Binance API responses to provide a single source of truth and improve type safety.
+- **Service Refactoring:** Refactored `BinanceService` to use these structured models and added comprehensive DartDoc documentation for all methods.
 ## Planned Features
 - **Enhanced Orders:** Support for Limit orders, Stop Loss, and Take Profit.
 

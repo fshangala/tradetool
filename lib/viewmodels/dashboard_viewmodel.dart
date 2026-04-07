@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../services/binance_service.dart';
+import '../models/account_info.dart';
+import '../models/account_config.dart';
+import '../models/position_risk.dart';
 import 'settings_viewmodel.dart';
 import 'notification_viewmodel.dart';
 import '../core/logger.dart';
@@ -85,11 +88,14 @@ class DashboardViewModel extends ChangeNotifier {
   double _availableBalance = 0.0;
   double get availableBalance => _availableBalance;
 
-  List<dynamic> _positions = [];
-  List<dynamic> get positions => _positions;
+  List<PositionRisk> _positions = [];
+  List<PositionRisk> get positions => _positions;
 
-  Map<String, dynamic>? _accountInfo;
-  Map<String, dynamic>? get accountInfo => _accountInfo;
+  AccountInformation? _accountInfo;
+  AccountInformation? get accountInfo => _accountInfo;
+
+  AccountConfig? _accountConfig;
+  AccountConfig? get accountConfig => _accountConfig;
 
   List<MainIndicator> _mainIndicators = [
     EMAIndicator(calcParams: [7, 25, 99]),
@@ -163,6 +169,7 @@ class DashboardViewModel extends ChangeNotifier {
     if (key.isEmpty || secret.isEmpty) {
       logger.i('API Keys not set, skipping account info fetch');
       _accountInfo = null;
+      _accountConfig = null;
       _availableBalance = 0.0;
       return;
     }
@@ -173,15 +180,10 @@ class DashboardViewModel extends ChangeNotifier {
         _binanceService.fetchAccountConfig(),
       ]);
       
-      final accountInfoData = results[0];
-      final accountConfigData = results[1];
+      _accountInfo = results[0] as AccountInformation;
+      _accountConfig = results[1] as AccountConfig;
       
-      _accountInfo = {
-        ...accountInfoData,
-        ...accountConfigData,
-      };
-      
-      _availableBalance = double.tryParse(accountInfoData['availableBalance']?.toString() ?? '0') ?? 0.0;
+      _availableBalance = _accountInfo?.availableBalance ?? 0.0;
     } catch (e) {
       logger.e('Error fetching account info: $e');
       notificationViewModel.error('Failed to load account info: $e');
@@ -206,10 +208,7 @@ class DashboardViewModel extends ChangeNotifier {
 
     try {
       final positionRisk = await _binanceService.fetchPositionRisk();
-      _positions = positionRisk.where((p) {
-        final amt = double.tryParse(p['positionAmt']?.toString() ?? '0') ?? 0.0;
-        return amt != 0;
-      }).toList();
+      _positions = positionRisk.where((p) => p.positionAmt != 0).toList();
 
       _updateChartIndicators();
     } catch (e) {
@@ -222,9 +221,9 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   void _updateChartIndicators() {
-    final symbolPositions = _positions.where((p) => p['symbol'] == _currentSymbol).toList();
+    final symbolPositions = _positions.where((p) => p.symbol == _currentSymbol).toList();
     final entryPrices = symbolPositions
-        .map((p) => double.tryParse(p['entryPrice']?.toString() ?? '0') ?? 0.0)
+        .map((p) => p.entryPrice)
         .where((price) => price > 0)
         .toList();
 
@@ -243,14 +242,14 @@ class DashboardViewModel extends ChangeNotifier {
     await _fetchPositions();
   }
 
-  Future<void> closePosition(Map<String, dynamic> position) async {
-    final symbol = position['symbol'];
-    final amt = double.tryParse(position['positionAmt']?.toString() ?? '0') ?? 0.0;
+  Future<void> closePosition(PositionRisk position) async {
+    final symbol = position.symbol;
+    final amt = position.positionAmt;
     if (amt == 0) return;
 
     final side = amt > 0 ? 'SELL' : 'BUY';
     final quantity = amt.abs();
-    final positionSide = position['positionSide'] ?? 'BOTH';
+    final positionSide = position.positionSide;
 
     try {
       _isPositionsLoading = true;
@@ -264,7 +263,7 @@ class DashboardViewModel extends ChangeNotifier {
         positionSide: positionSide,
       );
 
-      logger.i('Position closed successfully: $response');
+      logger.i('Position closed successfully: ${response.orderId}');
       notificationViewModel.success('Position closed for $symbol');
       
       await Future.wait([
@@ -355,7 +354,7 @@ class DashboardViewModel extends ChangeNotifier {
     }
 
     try {
-      final bool isHedgeMode = _accountInfo?['dualSidePosition'] ?? false;
+      final bool isHedgeMode = _accountConfig?.dualSidePosition ?? false;
       String? positionSide;
       if (isHedgeMode) {
         positionSide = side == 'BUY' ? 'LONG' : 'SHORT';
@@ -370,7 +369,7 @@ class DashboardViewModel extends ChangeNotifier {
         quantity: formattedQuantity,
         positionSide: positionSide,
       );
-      logger.i('Order placed successfully: $response');
+      logger.i('Order placed successfully: ${response.orderId}');
       notificationViewModel.success(
         '${side == 'BUY' ? 'Long' : 'Short'} order filled: $formattedQuantity $_currentSymbol',
       );

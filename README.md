@@ -21,7 +21,14 @@ This tool provides a streamlined, high-performance interface for futures traders
 - **Secure Authentication:** All private requests are signed with HMAC SHA256 as required by Binance API.
 
 ## Architecture
-This project follows the **MVVM (Model-View-ViewModel)** architectural pattern using the `provider` package. This ensures a clean separation between UI components and business logic, promoting maintainability and stability.
+This project follows the **MVVM (Model-View-ViewModel)** architectural pattern using the `provider` package. 
+
+- **Models:** Structured Dart classes (`AccountInformation`, `PositionRisk`, `Trade`, etc.) provide a single source of truth for all API data, ensuring type safety and robust parsing.
+- **ViewModels:** `ChangeNotifier` classes that handle business logic, state management, and interaction with the `BinanceService`.
+- **Views:** Declarative UI components built with Flutter, focusing solely on rendering state and handling user input.
+- **Services:** `BinanceService` provides an authenticated, documented interface to the Binance Futures API.
+
+This separation ensures a clean codebase, promoting maintainability and high stability for real-time trading data.
 
 ## UI/UX Standards
 - **Dark Mode:** Optimized for low-light environments and a premium trading experience.

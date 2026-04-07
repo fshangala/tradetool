@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
 import '../viewmodels/dashboard_viewmodel.dart';
+import '../models/position_risk.dart';
 import 'widgets/notification_overlay.dart';
 import '../core/theme.dart';
 
@@ -309,12 +310,12 @@ class DashboardView extends StatelessWidget {
           )
         else
           ...viewModel.positions.map((position) {
-            final amt = double.tryParse(position['positionAmt']?.toString() ?? '0') ?? 0.0;
-            final entryPrice = double.tryParse(position['entryPrice']?.toString() ?? '0') ?? 0.0;
-            final markPrice = double.tryParse(position['markPrice']?.toString() ?? '0') ?? 0.0;
-            final pnl = double.tryParse(position['unRealizedProfit']?.toString() ?? '0') ?? 0.0;
-            final isLong = amt > 0;
-            final symbol = position['symbol']?.toString() ?? 'Unknown';
+            final amt = position.positionAmt;
+            final entryPrice = position.entryPrice;
+            final markPrice = position.markPrice;
+            final pnl = position.unRealizedProfit;
+            final isLong = position.isLong;
+            final symbol = position.symbol;
 
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -410,9 +411,9 @@ class DashboardView extends StatelessWidget {
   void _showCloseConfirmation(
     BuildContext context,
     DashboardViewModel viewModel,
-    Map<String, dynamic> position,
+    PositionRisk position,
   ) {
-    final symbol = position['symbol'];
+    final symbol = position.symbol;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
