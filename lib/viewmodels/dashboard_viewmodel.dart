@@ -79,10 +79,12 @@ class DashboardViewModel extends ChangeNotifier {
   final Map<String, String?> _activeStrategyIds = {}; // symbol -> strategyId
   final Map<String, String> _activeStrategyPhases = {}; // symbol -> phase (entry, exit)
   final Map<String, String?> _failedActions = {}; // symbol -> failedActionName ('entry', 'protection', 'exit')
+  final Map<String, bool> _workingSymbols = {}; // symbol -> working
   
   String? getActiveStrategyId(String symbol) => _activeStrategyIds[symbol];
   String getActiveStrategyPhase(String symbol) => _activeStrategyPhases[symbol] ?? 'none';
   String? getFailedAction(String symbol) => _failedActions[symbol];
+  bool isWorking(String symbol) => _workingSymbols[symbol] ?? false;
 
   void setStrategyForSymbol(String symbol, String? strategyId) {
     if (isSymbolLocked(symbol)) return;
@@ -91,6 +93,7 @@ class DashboardViewModel extends ChangeNotifier {
       _activeStrategyPhases[symbol] = 'entry';
     } else {
       _activeStrategyPhases.remove(symbol);
+      _workingSymbols.remove(symbol);
     }
     _failedActions.remove(symbol);
     _updateWakelock();
@@ -378,7 +381,7 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   void _runStrategyEvaluation(String symbol) {
-    if (_failedActions[symbol] != null) return;
+    if (_failedActions[symbol] != null || isWorking(symbol)) return;
 
     final strategyId = _activeStrategyIds[symbol];
     if (strategyId == null) return;
@@ -423,6 +426,9 @@ class DashboardViewModel extends ChangeNotifier {
   Future<void> _executeEntry(String symbol, Strategy strategy, String side, EntrySettings entry) async {
     logger.i('$side entry conditions met for $symbol using ${strategy.name}');
     try {
+      _workingSymbols[symbol] = true;
+      notifyListeners();
+
       await placeMarketOrder(side, percent: strategy.walletPercentage / 100);
       _activeStrategyPhases[symbol] = 'exit';
       
@@ -434,35 +440,41 @@ class DashboardViewModel extends ChangeNotifier {
       logger.e('Entry execution failed: $e');
       _failedActions[symbol] = 'entry';
       notifyListeners();
+    } finally {
+      _workingSymbols[symbol] = false;
+      notifyListeners();
     }
   }
 
   Future<void> _placeProtectionOrdersForSymbol(String symbol, double tpPercent, double slPercent) async {
     PositionRisk? position;
     
-    // Retry finding position up to 3 times with 1s delay
-    for (int i = 0; i < 3; i++) {
-      await _fetchPositions();
-      position = _positions.firstWhereOrNull((p) => p.symbol == symbol);
-      if (position != null) break;
-      await Future.delayed(const Duration(seconds: 1));
-    }
-
-    if (position == null) {
-      logger.e('Could not find position for $symbol to set protection');
-      _failedActions[symbol] = 'protection';
-      notifyListeners();
-      return;
-    }
-
-    final entryPrice = position.entryPrice;
-    if (entryPrice <= 0) return;
-
-    final isLong = position.positionAmt > 0;
-    final tpPrice = isLong ? entryPrice * (1 + tpPercent / 100) : entryPrice * (1 - tpPercent / 100);
-    final slPrice = isLong ? entryPrice * (1 - slPercent / 100) : entryPrice * (1 + slPercent / 100);
-
     try {
+      _workingSymbols[symbol] = true;
+      notifyListeners();
+
+      // Retry finding position up to 3 times with 1s delay
+      for (int i = 0; i < 3; i++) {
+        await _fetchPositions();
+        position = _positions.firstWhereOrNull((p) => p.symbol == symbol);
+        if (position != null) break;
+        await Future.delayed(const Duration(seconds: 1));
+      }
+
+      if (position == null) {
+        logger.e('Could not find position for $symbol to set protection');
+        _failedActions[symbol] = 'protection';
+        notifyListeners();
+        return;
+      }
+
+      final entryPrice = position.entryPrice;
+      if (entryPrice <= 0) return;
+
+      final isLong = position.positionAmt > 0;
+      final tpPrice = isLong ? entryPrice * (1 + tpPercent / 100) : entryPrice * (1 - tpPercent / 100);
+      final slPrice = isLong ? entryPrice * (1 - slPercent / 100) : entryPrice * (1 + slPercent / 100);
+
       logger.i('Setting protection for $symbol: TP at $tpPrice, SL at $slPrice');
       
       await _binanceService.placeAlgoOrder(
@@ -491,6 +503,9 @@ class DashboardViewModel extends ChangeNotifier {
       notificationViewModel.error('Failed to place protection orders: $e');
       _failedActions[symbol] = 'protection';
       notifyListeners();
+    } finally {
+      _workingSymbols[symbol] = false;
+      notifyListeners();
     }
   }
 
@@ -511,6 +526,9 @@ class DashboardViewModel extends ChangeNotifier {
     if (_evaluatePhase(exitConditions, _datas)) {
       logger.i('${isLong ? "Long" : "Short"} exit conditions met for $symbol using ${strategy.name}');
       try {
+        _workingSymbols[symbol] = true;
+        notifyListeners();
+
         await closePosition(position);
         _activeStrategyIds.remove(symbol);
         _activeStrategyPhases.remove(symbol);
@@ -521,13 +539,16 @@ class DashboardViewModel extends ChangeNotifier {
         logger.e('Exit execution failed: $e');
         _failedActions[symbol] = 'exit';
         notifyListeners();
+      } finally {
+        _workingSymbols[symbol] = false;
+        notifyListeners();
       }
     }
   }
 
   Future<void> retryAction(String symbol) async {
     final failedAction = _failedActions[symbol];
-    if (failedAction == null) return;
+    if (failedAction == null || isWorking(symbol)) return;
 
     final strategyId = _activeStrategyIds[symbol];
     if (strategyId == null) return;
@@ -539,6 +560,9 @@ class DashboardViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      _workingSymbols[symbol] = true;
+      notifyListeners();
+
       if (failedAction == 'entry') {
         _runStrategyEvaluation(symbol);
       } else if (failedAction == 'protection') {
@@ -562,6 +586,9 @@ class DashboardViewModel extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       // Failed action will be reset in the methods if it fails again
+    } finally {
+      _workingSymbols[symbol] = false;
+      notifyListeners();
     }
   }
 

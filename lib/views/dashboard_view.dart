@@ -82,16 +82,31 @@ class DashboardView extends StatelessWidget {
     final failedAction = viewModel.getFailedAction(viewModel.currentSymbol);
     if (failedAction == null) return const SizedBox.shrink();
 
+    final isWorking = viewModel.isWorking(viewModel.currentSymbol);
+
     String label = 'Retry Action';
-    if (failedAction == 'entry') label = 'Retry Entry';
-    if (failedAction == 'protection') label = 'Retry Protection';
-    if (failedAction == 'exit') label = 'Retry Close';
+    if (isWorking) {
+      label = 'Working...';
+    } else {
+      if (failedAction == 'entry') label = 'Retry Entry';
+      if (failedAction == 'protection') label = 'Retry Protection';
+      if (failedAction == 'exit') label = 'Retry Close';
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: ElevatedButton.icon(
-        onPressed: () => viewModel.retryAction(viewModel.currentSymbol),
-        icon: const Icon(Icons.replay),
+        onPressed: isWorking ? null : () => viewModel.retryAction(viewModel.currentSymbol),
+        icon: isWorking
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.black54,
+                ),
+              )
+            : const Icon(Icons.replay),
         label: Text(
           label,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -192,6 +207,7 @@ class DashboardView extends StatelessWidget {
     final activeId = viewModel.getActiveStrategyId(viewModel.currentSymbol);
     final activePhase = viewModel.getActiveStrategyPhase(viewModel.currentSymbol);
     final isLocked = viewModel.isSymbolLocked(viewModel.currentSymbol);
+    final isWorking = viewModel.isWorking(viewModel.currentSymbol);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0.0),
@@ -225,7 +241,7 @@ class DashboardView extends StatelessWidget {
                       );
                     }),
                   ],
-                  onChanged: isLocked ? null : (value) {
+                  onChanged: (isLocked || isWorking) ? null : (value) {
                     viewModel.setStrategyForSymbol(viewModel.currentSymbol, value);
                   },
                 ),
@@ -237,16 +253,26 @@ class DashboardView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               decoration: BoxDecoration(
-                color: BinanceTheme.yellow.withValues(alpha: 0.1),
+                color: (isWorking ? BinanceTheme.yellow : BinanceTheme.yellow).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: BinanceTheme.yellow.withValues(alpha: 0.2)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.auto_mode, color: BinanceTheme.yellow, size: 14),
+                  if (isWorking)
+                    const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: BinanceTheme.yellow,
+                      ),
+                    )
+                  else
+                    const Icon(Icons.auto_mode, color: BinanceTheme.yellow, size: 14),
                   const SizedBox(width: 4),
                   Text(
-                    activePhase.toUpperCase(),
+                    isWorking ? 'WORKING' : activePhase.toUpperCase(),
                     style: const TextStyle(
                       color: BinanceTheme.yellow,
                       fontSize: 10,
