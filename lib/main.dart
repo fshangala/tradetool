@@ -4,9 +4,11 @@ import 'core/theme.dart';
 import 'viewmodels/settings_viewmodel.dart';
 import 'viewmodels/dashboard_viewmodel.dart';
 import 'viewmodels/notification_viewmodel.dart';
+import 'viewmodels/trades_viewmodel.dart';
 import 'views/settings_view.dart';
 import 'views/dashboard_view.dart';
 import 'views/profile_view.dart';
+import 'views/trades_view.dart';
 
 void main() {
   runApp(const BinanceTradeApp());
@@ -33,6 +35,18 @@ class BinanceTradeApp extends StatelessWidget {
                 notificationViewModel: notification,
               ),
         ),
+        ChangeNotifierProxyProvider2<SettingsViewModel, NotificationViewModel, TradesViewModel>(
+          create: (context) => TradesViewModel(
+            settingsViewModel: context.read<SettingsViewModel>(),
+            notificationViewModel: context.read<NotificationViewModel>(),
+          ),
+          update: (context, settings, notification, previous) =>
+              previous ??
+              TradesViewModel(
+                settingsViewModel: settings,
+                notificationViewModel: notification,
+              ),
+        ),
       ],
       child: MaterialApp(
         title: 'Binance Trade Tool',
@@ -43,6 +57,7 @@ class BinanceTradeApp extends StatelessWidget {
           '/': (context) => const DashboardView(),
           '/settings': (context) => const SettingsView(),
           '/profile': (context) => const ProfileView(),
+          '/trades': (context) => const TradesView(),
         },
       ),
     );

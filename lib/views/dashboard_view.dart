@@ -23,6 +23,10 @@ class DashboardView extends StatelessWidget {
             onPressed: viewModel.refresh,
           ),
           IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () => Navigator.pushNamed(context, '/trades'),
+          ),
+          IconButton(
             icon: const Icon(Icons.person),
             onPressed: () => Navigator.pushNamed(context, '/profile'),
           ),

@@ -4,7 +4,7 @@
 `tradetool` is a Flutter application for trading futures on the Binance platform. It utilizes the Binance API for live and testnet environments.
 
 - **Primary Technologies:** Flutter, Dart (SDK ^3.9.2).
-- **Core Dependencies:** `provider`, `shared_preferences`, `cupertino_icons`, `http`, `k_chart_plus`, `web_socket_channel`, `logger`, `crypto`.
+- **Core Dependencies:** `provider`, `shared_preferences`, `cupertino_icons`, `http`, `k_chart_plus`, `web_socket_channel`, `logger`, `crypto`, `intl`.
 - **Architecture:** Strictly follow **MVVM (Model-View-ViewModel)** using the `provider` package.
 
 ## UI & Design Standards
@@ -12,7 +12,7 @@
 - **Primary Color:** Binance Yellow (`#F0B90B`).
 - **Aesthetic:** Modern design with gradients and transparent/glassmorphism objects.
 - **Material Design:** Follow Material 3 guidelines while incorporating the custom theme.
-- **Navigation:** Use named routes. `/` (Dashboard), `/settings` (Settings), and `/profile` (Profile).
+- **Navigation:** Use named routes. `/` (Dashboard), `/settings` (Settings), `/profile` (Profile), and `/trades` (Trades).
 
 ## Development Conventions
 - **State Management:** Use `ChangeNotifier` classes as ViewModels and provide them using `ChangeNotifierProvider`.
@@ -42,9 +42,9 @@
 - **Dashboard Enhancements:** Added a dedicated refresh button for positions, integrated open position entry prices into the candlestick chart, and implemented dual dropdown selectors for customizable symbols and 15+ time intervals.
 - **Trading Operations:** Implemented "Close Position" functionality for instant market exit.
 - **Customizable Pair Management:** Added a settings section to fetch, select, and persist a personalized list of trading pairs using `SharedPreferences`.
+- **Trade History:** Implemented a dedicated trade history page fetching data from `/fapi/v1/userTrades`, with detailed modal views for each transaction and dashboard integration.
 ## Planned Features
 - **Enhanced Orders:** Support for Limit orders, Stop Loss, and Take Profit.
-- **Historical Data:** View trade history and transaction logs.
 
 ## Key Files
 - `lib/main.dart`: Entry point with route configuration and top-level providers.

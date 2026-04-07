@@ -60,7 +60,6 @@ class _NotificationTile extends StatelessWidget {
         icon = Icons.error_outline;
         break;
       case NotificationType.info:
-      default:
         iconColor = BinanceTheme.yellow;
         icon = Icons.info_outline;
         break;

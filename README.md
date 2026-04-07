@@ -12,6 +12,7 @@ This tool provides a streamlined, high-performance interface for futures traders
 - **Advanced Interval Support:** Choose from 15 timeframes ranging from 1 minute to 1 month.
 - **One-Click Trading:** Execute Long or Short market orders using a pre-configured percentage of available margin (default 40%).
 - **Instant Position Exit:** Quick "Close Position" button to exit trades at market price with a single confirmation.
+- **Trade History & Analytics:** Comprehensive history of your trades with detailed breakdowns of price, quantity, commission, and realized PnL.
 - **Personalized Symbol List:** Manage your own trading pairs list in Settings; fetch all available perpetual pairs and save your favorites.
 - **Independent Position Tracking:** Real-time monitoring of open positions, entry prices, mark prices, and unrealized PnL, with dedicated refresh controls.
 - **Dual Network Support:** Toggle between Binance Testnet and Live network with independent API key management.

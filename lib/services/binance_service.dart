@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
 import 'package:crypto/crypto.dart';
+import '../models/trade.dart';
 
 class BinanceService {
   static const String liveBaseUrl = 'https://fapi.binance.com';
@@ -215,5 +216,35 @@ class BinanceService {
       amount: double.parse(k['q'].toString()),
       time: int.parse(k['t'].toString()),
     );
+  }
+
+  Future<List<Trade>> fetchUserTrades({String? symbol}) async {
+    if (apiKey == null || secretKey == null) {
+      throw Exception('API Key and Secret Key are required');
+    }
+
+    final int timestamp = DateTime.now().millisecondsSinceEpoch;
+    final Map<String, String> params = {
+      'timestamp': timestamp.toString(),
+      'recvWindow': '60000',
+    };
+    if (symbol != null) params['symbol'] = symbol.toUpperCase();
+
+    final String queryString = Uri(queryParameters: params).query;
+    final String signature = _generateSignature(queryString);
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/fapi/v1/userTrades?$queryString&signature=$signature'),
+      headers: {
+        'X-MBX-APIKEY': apiKey!,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((item) => Trade.fromJson(item)).toList();
+    } else {
+      throw Exception('Failed to load user trades: ${response.body}');
+    }
   }
 }
