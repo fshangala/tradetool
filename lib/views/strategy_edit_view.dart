@@ -19,6 +19,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
   late TextEditingController _nameController;
   late List<Condition> _entryConditions;
   late List<Condition> _exitConditions;
+  late double _walletPercentage;
   late double _takeProfit;
   late double _stopLoss;
 
@@ -30,6 +31,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     _nameController = TextEditingController(text: s?.name ?? '');
     _entryConditions = List.from(s?.entryPhase.conditions ?? []);
     _exitConditions = List.from(s?.exitPhase.conditions ?? []);
+    _walletPercentage = s?.walletPercentage ?? 40.0;
     _takeProfit = s?.protectionPhase.takeProfitPercentage ?? 1.0;
     _stopLoss = s?.protectionPhase.stopLossPercentage ?? 1.0;
   }
@@ -52,6 +54,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
       final strategy = Strategy(
         id: _id,
         name: _nameController.text,
+        walletPercentage: _walletPercentage,
         entryPhase: StrategyPhase(conditions: _entryConditions),
         protectionPhase: ProtectionSettings(
           takeProfitPercentage: _takeProfit,
@@ -99,6 +102,30 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                 enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
               ),
               validator: (value) => value == null || value.isEmpty ? 'Please enter a name' : null,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              initialValue: _walletPercentage.toString(),
+              style: const TextStyle(color: Colors.white),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Wallet Percentage for Entry (%)',
+                labelStyle: TextStyle(color: Colors.white70),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                helperText: 'Max 80%',
+                helperStyle: TextStyle(color: Colors.white38, fontSize: 10),
+              ),
+              onChanged: (val) {
+                final doubleValue = double.tryParse(val);
+                if (doubleValue != null) _walletPercentage = doubleValue;
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Required';
+                final val = double.tryParse(value);
+                if (val == null) return 'Invalid number';
+                if (val <= 0 || val > 80) return 'Must be between 1 and 80';
+                return null;
+              },
             ),
             const SizedBox(height: 24),
             _buildPhaseSection('Entry Phase (Buy/Long)', _entryConditions),

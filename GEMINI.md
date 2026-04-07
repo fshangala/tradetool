@@ -48,6 +48,7 @@
 - **Automated Trading Strategies:** Implemented a three-phase strategy engine (Entry, Protection, Exit) with a management UI. Strategies can be defined using multiple conditions (Price, RSI, EMA) and include automated Take Profit and Stop Loss placement.
 - **Enhanced Strategy Conditions:** Added support for dynamic comparisons in strategy conditions, allowing price or indicators to be compared against other indicators (e.g., "Close > EMA25").
 - **Algo Order Support:** Integrated Binance's specialized Algo Order Service (`/fapi/v1/algoOrder`) for placing conditional protection orders (Take Profit and Stop Loss).
+- **Customizable Wallet Usage:** Users can now specify the percentage of available wallet balance (1-80%) to be used for each strategy's entry orders.
 ## Planned Features
 - **Enhanced Orders:** Support for Limit orders, Stop Loss, and Take Profit.
 

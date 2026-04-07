@@ -19,7 +19,7 @@ This tool provides a streamlined, high-performance interface for futures traders
 - **Detailed Account Profile:** Comprehensive view of wallet balances, asset breakdown, and account configuration flags (Position Mode, Multi-Assets Mode, etc.).
 - **Smart Notifications:** Non-intrusive, auto-dismissing notifications for order confirmations and API errors.
 - **Automated Trading Strategies:** Create and manage custom strategies with three distinct phases:
-    - **Entry Phase:** Automate trade entries based on indicators (RSI, EMA) or price levels. Supports dynamic comparisons (e.g., Close > EMA25).
+    - **Entry Phase:** Automate trade entries based on indicators (RSI, EMA) or price levels. Supports dynamic comparisons (e.g., Close > EMA25) and customizable wallet usage percentage (1-80%).
     - **Protection Phase:** Automatically place Take Profit and Stop Loss orders immediately after an entry is filled.
     - **Exit Phase:** Automate position closing based on custom technical conditions.
 - **Secure Authentication:** All private requests are signed with HMAC SHA256 as required by Binance API.

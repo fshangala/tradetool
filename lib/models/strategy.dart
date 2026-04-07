@@ -107,6 +107,7 @@ class ProtectionSettings {
 class Strategy {
   final String id;
   final String name;
+  final double walletPercentage; // 1 to 80
   final StrategyPhase entryPhase;
   final ProtectionSettings protectionPhase;
   final StrategyPhase exitPhase;
@@ -114,6 +115,7 @@ class Strategy {
   Strategy({
     required this.id,
     required this.name,
+    this.walletPercentage = 40.0,
     required this.entryPhase,
     required this.protectionPhase,
     required this.exitPhase,
@@ -123,6 +125,7 @@ class Strategy {
     return Strategy(
       id: json['id'],
       name: json['name'],
+      walletPercentage: (json['walletPercentage'] as num?)?.toDouble() ?? 40.0,
       entryPhase: StrategyPhase.fromJson(json['entryPhase']),
       protectionPhase: ProtectionSettings.fromJson(json['protectionPhase']),
       exitPhase: StrategyPhase.fromJson(json['exitPhase']),
@@ -133,6 +136,7 @@ class Strategy {
     return {
       'id': id,
       'name': name,
+      'walletPercentage': walletPercentage,
       'entryPhase': entryPhase.toJson(),
       'protectionPhase': protectionPhase.toJson(),
       'exitPhase': exitPhase.toJson(),

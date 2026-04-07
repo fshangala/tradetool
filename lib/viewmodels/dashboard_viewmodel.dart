@@ -385,7 +385,7 @@ class DashboardViewModel extends ChangeNotifier {
     if (_evaluatePhase(strategy.entryPhase, _datas)) {
       logger.i('Entry conditions met for $symbol using ${strategy.name}');
       // For MVP, always Long. In a real app, Strategy should define side.
-      await placeMarketOrder('BUY');
+      await placeMarketOrder('BUY', percent: strategy.walletPercentage / 100);
       _activeStrategyPhases[symbol] = 'protection';
       notifyListeners();
     }
@@ -542,11 +542,11 @@ class DashboardViewModel extends ChangeNotifier {
     await _init();
   }
 
-  Future<void> placeMarketOrder(String side) async {
+  Future<void> placeMarketOrder(String side, {double percent = 0.4}) async {
     if (_datas.isEmpty) return;
 
     final currentPrice = _datas.last.close;
-    final marginToUse = _availableBalance * 0.4;
+    final marginToUse = _availableBalance * percent;
     final quantity = marginToUse / currentPrice;
 
     // Simple rounding for quantity (e.g., BTCUSDT usually supports 3 decimals)
