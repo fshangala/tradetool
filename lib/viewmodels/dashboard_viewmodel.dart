@@ -409,23 +409,23 @@ class DashboardViewModel extends ChangeNotifier {
     try {
       logger.i('Setting protection for $symbol: TP at $tpPrice, SL at $slPrice');
       
-      // Place Take Profit Market order
-      await _binanceService.placeOrder(
+      // Place Take Profit Market algo order
+      await _binanceService.placeAlgoOrder(
         symbol: symbol,
         side: isLong ? 'SELL' : 'BUY',
         type: 'TAKE_PROFIT_MARKET',
-        stopPrice: double.parse(tpPrice.toStringAsFixed(2)),
+        triggerPrice: double.parse(tpPrice.toStringAsFixed(2)),
         closePosition: true,
         workingType: 'MARK_PRICE',
         positionSide: position.positionSide,
       );
 
-      // Place Stop Loss Market order
-      await _binanceService.placeOrder(
+      // Place Stop Loss Market algo order
+      await _binanceService.placeAlgoOrder(
         symbol: symbol,
         side: isLong ? 'SELL' : 'BUY',
         type: 'STOP_MARKET',
-        stopPrice: double.parse(slPrice.toStringAsFixed(2)),
+        triggerPrice: double.parse(slPrice.toStringAsFixed(2)),
         closePosition: true,
         workingType: 'MARK_PRICE',
         positionSide: position.positionSide,

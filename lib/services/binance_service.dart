@@ -8,6 +8,7 @@ import '../models/account_info.dart';
 import '../models/account_config.dart';
 import '../models/position_risk.dart';
 import '../models/order_response.dart';
+import '../models/algo_order_response.dart';
 
 /// Service class to interact with the Binance Futures API.
 class BinanceService {
@@ -296,6 +297,78 @@ class BinanceService {
       return data.map((item) => Trade.fromJson(item)).toList();
     } else {
       throw Exception('Failed to load user trades: ${response.body}');
+    }
+  }
+
+  /// Places a new algo order (conditional order) using the Algo Service.
+  ///
+  /// [symbol] The trading pair.
+  /// [side] 'BUY' or 'SELL'.
+  /// [type] 'STOP_MARKET', 'TAKE_PROFIT_MARKET', 'TRAILING_STOP_MARKET', etc.
+  /// [quantity] Order quantity.
+  /// [triggerPrice] The price that triggers the order.
+  /// [price] Execution price for limit algo orders.
+  /// [positionSide] 'BOTH', 'LONG', or 'SHORT'.
+  /// [closePosition] Set to true to close the entire position.
+  /// [reduceOnly] Set to true to only reduce position.
+  /// [workingType] 'MARK_PRICE' or 'CONTRACT_PRICE'.
+  /// [priceProtect] 'TRUE' or 'FALSE'.
+  /// [callbackRate] Callback rate for trailing stop (0.1 to 5).
+  /// [activatePrice] Activation price for trailing stop.
+  Future<AlgoOrderResponse> placeAlgoOrder({
+    required String symbol,
+    required String side,
+    required String type,
+    double? quantity,
+    double? triggerPrice,
+    double? price,
+    String? positionSide,
+    bool? closePosition,
+    bool? reduceOnly,
+    String? workingType,
+    String? priceProtect,
+    double? callbackRate,
+    double? activatePrice,
+  }) async {
+    if (apiKey == null || secretKey == null) {
+      throw Exception('API Key and Secret Key are required');
+    }
+
+    final int timestamp = DateTime.now().millisecondsSinceEpoch;
+    final Map<String, String> params = {
+      'algoType': 'CONDITIONAL',
+      'symbol': symbol.toUpperCase(),
+      'side': side.toUpperCase(),
+      'type': type.toUpperCase(),
+      'timestamp': timestamp.toString(),
+      'recvWindow': '60000',
+    };
+
+    if (quantity != null) params['quantity'] = quantity.toString();
+    if (triggerPrice != null) params['triggerPrice'] = triggerPrice.toString();
+    if (price != null) params['price'] = price.toString();
+    if (positionSide != null) params['positionSide'] = positionSide.toUpperCase();
+    if (closePosition == true) params['closePosition'] = 'true';
+    if (reduceOnly == true) params['reduceOnly'] = 'true';
+    if (workingType != null) params['workingType'] = workingType.toUpperCase();
+    if (priceProtect != null) params['priceProtect'] = priceProtect.toUpperCase();
+    if (callbackRate != null) params['callbackRate'] = callbackRate.toString();
+    if (activatePrice != null) params['activatePrice'] = activatePrice.toString();
+
+    final String queryString = Uri(queryParameters: params).query;
+    final String signature = _generateSignature(queryString);
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/fapi/v1/algoOrder?$queryString&signature=$signature'),
+      headers: {
+        'X-MBX-APIKEY': apiKey!,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return AlgoOrderResponse.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to place algo order: ${response.body}');
     }
   }
 }
