@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:collection/collection.dart';
 import '../services/binance_service.dart';
 import '../models/account_info.dart';
 import '../models/account_config.dart';
@@ -420,10 +421,23 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   Future<void> _placeProtectionOrdersForSymbol(String symbol, double tpPercent, double slPercent) async {
-    final positions = _positions.where((p) => p.symbol == symbol).toList();
-    if (positions.isEmpty) return;
+    PositionRisk? position;
+    
+    // Retry finding position up to 3 times with 1s delay
+    for (int i = 0; i < 3; i++) {
+      await _fetchPositions();
+      position = _positions.firstWhereOrNull((p) => p.symbol == symbol);
+      if (position != null) break;
+      await Future.delayed(const Duration(seconds: 1));
+    }
 
-    final position = positions.first;
+    if (position == null) {
+      logger.e('Could not find position for $symbol to set protection');
+      _failedActions[symbol] = 'protection';
+      notifyListeners();
+      return;
+    }
+
     final entryPrice = position.entryPrice;
     if (entryPrice <= 0) return;
 
@@ -464,8 +478,8 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   Future<void> _processExitPhase(String symbol, Strategy strategy) async {
-    final symbolPositions = _positions.where((p) => p.symbol == symbol).toList();
-    if (symbolPositions.isEmpty) {
+    final position = _positions.firstWhereOrNull((p) => p.symbol == symbol);
+    if (position == null) {
       _activeStrategyIds.remove(symbol);
       _activeStrategyPhases.remove(symbol);
       _failedActions.remove(symbol);
@@ -474,7 +488,6 @@ class DashboardViewModel extends ChangeNotifier {
       return;
     }
 
-    final position = symbolPositions.first;
     final isLong = position.positionAmt > 0;
     final exitConditions = isLong ? strategy.longExit.conditions : strategy.shortExit.conditions;
 
@@ -510,21 +523,20 @@ class DashboardViewModel extends ChangeNotifier {
 
     try {
       if (failedAction == 'entry') {
-        // We don't know if it was long or short evaluation that triggered retry easily without re-evaluating
-        // But retry usually means user knows it failed and wants to try again with same conditions.
-        // We'll just run evaluation again immediately.
         _runStrategyEvaluation(symbol);
       } else if (failedAction == 'protection') {
-        final symbolPositions = _positions.where((p) => p.symbol == symbol).toList();
-        if (symbolPositions.isNotEmpty) {
-          final isLong = symbolPositions.first.positionAmt > 0;
+        final position = _positions.firstWhereOrNull((p) => p.symbol == symbol);
+        if (position != null) {
+          final isLong = position.positionAmt > 0;
           final entry = isLong ? strategy.longEntry : strategy.shortEntry;
           await _placeProtectionOrdersForSymbol(symbol, entry.takeProfit, entry.stopLoss);
+        } else {
+          await _placeProtectionOrdersForSymbol(symbol, strategy.longEntry.takeProfit, strategy.longEntry.stopLoss);
         }
       } else if (failedAction == 'exit') {
-        final symbolPositions = _positions.where((p) => p.symbol == symbol).toList();
-        if (symbolPositions.isNotEmpty) {
-          await closePosition(symbolPositions.first);
+        final position = _positions.firstWhereOrNull((p) => p.symbol == symbol);
+        if (position != null) {
+          await closePosition(position);
           _activeStrategyIds.remove(symbol);
           _activeStrategyPhases.remove(symbol);
           _updateWakelock();
@@ -532,7 +544,7 @@ class DashboardViewModel extends ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
-      // If retry fails, it will set failedAction again inside the methods
+      // Failed action will be reset in the methods if it fails again
     }
   }
 
@@ -547,16 +559,18 @@ class DashboardViewModel extends ChangeNotifier {
   bool _evaluateCondition(Condition condition, List<KLineEntity> data) {
     if (data.isEmpty) return false;
 
+    final lastData = data.last;
+
     double leftValue;
     if (condition.type == ConditionType.price) {
-      leftValue = data.last.close;
+      leftValue = lastData.close;
     } else {
-      leftValue = _getIndicatorValue(condition.indicatorName!, data.last);
+      leftValue = _getIndicatorValue(condition.indicatorName!, lastData);
     }
 
     double rightValue;
     if (condition.targetIndicatorName != null) {
-      rightValue = _getIndicatorValue(condition.targetIndicatorName!, data.last);
+      rightValue = _getIndicatorValue(condition.targetIndicatorName!, lastData);
     } else {
       rightValue = condition.value;
     }
@@ -570,20 +584,22 @@ class DashboardViewModel extends ChangeNotifier {
         return leftValue == rightValue;
       case Operator.crossesAbove:
         if (data.length < 2) return false;
+        final prevData = data[data.length - 2];
         final prevLeft = condition.type == ConditionType.price 
-            ? data[data.length - 2].close 
-            : _getIndicatorValue(condition.indicatorName!, data[data.length - 2]);
+            ? prevData.close 
+            : _getIndicatorValue(condition.indicatorName!, prevData);
         final prevRight = condition.targetIndicatorName != null
-            ? _getIndicatorValue(condition.targetIndicatorName!, data[data.length - 2])
+            ? _getIndicatorValue(condition.targetIndicatorName!, prevData)
             : condition.value;
         return prevLeft <= prevRight && leftValue > rightValue;
       case Operator.crossesBelow:
         if (data.length < 2) return false;
+        final prevData = data[data.length - 2];
         final prevLeft = condition.type == ConditionType.price 
-            ? data[data.length - 2].close 
-            : _getIndicatorValue(condition.indicatorName!, data[data.length - 2]);
+            ? prevData.close 
+            : _getIndicatorValue(condition.indicatorName!, prevData);
         final prevRight = condition.targetIndicatorName != null
-            ? _getIndicatorValue(condition.targetIndicatorName!, data[data.length - 2])
+            ? _getIndicatorValue(condition.targetIndicatorName!, prevData)
             : condition.value;
         return prevLeft >= prevRight && leftValue < rightValue;
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
+import 'package:collection/collection.dart';
 import '../viewmodels/dashboard_viewmodel.dart';
 import '../models/position_risk.dart';
 import 'widgets/notification_overlay.dart';
@@ -205,7 +206,7 @@ class DashboardView extends StatelessWidget {
                   isExpanded: true,
                   hint: const Text('Select Strategy', style: TextStyle(color: Colors.white54, fontSize: 14)),
                   disabledHint: Text(
-                    strategies.firstWhere((s) => s.id == activeId, orElse: () => strategies.first).name,
+                    strategies.firstWhereOrNull((s) => s.id == activeId)?.name ?? 'Active Strategy',
                     style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
                   icon: const Icon(Icons.psychology, color: BinanceTheme.yellow, size: 18),
