@@ -10,7 +10,13 @@ This tool provides a streamlined, high-performance interface for futures traders
 - **Position Chart Integration:** Visualize open position entry prices directly on the K-line chart.
 - **Dynamic Pair Selection:** Quickly switch between symbols using a dashboard dropdown, synced with your personalized settings.
 - **Advanced Interval Support:** Choose from 15 timeframes ranging from 1 minute to 1 month.
-- **One-Click Trading:** Execute Long or Short market orders using a pre-configured percentage of available margin (default 40%).
+- **Automated Trading Strategies:** Create and manage custom strategies with sophisticated entry and exit logic.
+    - **Dual-Side Support:** Define independent conditions for Long and Short entries/exits within the same strategy.
+    - **Integrated Protection:** Configure Take Profit and Stop Loss directly in the entry settings for immediate placement upon order fill.
+    - **Dynamic Comparisons:** Compare price or indicators against other indicators (e.g., "Close > EMA25").
+    - **Customizable Wallet Usage:** Allocate 1-80% of available wallet balance per strategy.
+- **Dashboard Automation:** Optimized for hands-free trading with automated strategy execution and a "Retry" mechanism for failed API actions.
+- **Algo Order Service:** Utilizes Binance's specialized Algo Order API for reliable automated protection.
 - **Instant Position Exit:** Quick "Close Position" button to exit trades at market price with a single confirmation.
 - **Trade History & Analytics:** Comprehensive history of your trades with detailed breakdowns of price, quantity, commission, and realized PnL.
 - **Personalized Symbol List:** Manage your own trading pairs list in Settings; fetch all available perpetual pairs and save your favorites.
@@ -18,16 +24,13 @@ This tool provides a streamlined, high-performance interface for futures traders
 - **Dual Network Support:** Toggle between Binance Testnet and Live network with independent API key management.
 - **Detailed Account Profile:** Comprehensive view of wallet balances, asset breakdown, and account configuration flags (Position Mode, Multi-Assets Mode, etc.).
 - **Smart Notifications:** Non-intrusive, auto-dismissing notifications for order confirmations and API errors.
-- **Automated Trading Strategies:** Create and manage custom strategies with three distinct phases:
-    - **Entry Phase:** Automate trade entries based on indicators (RSI, EMA) or price levels. Supports dynamic comparisons (e.g., Close > EMA25) and customizable wallet usage percentage (1-80%).
-    - **Protection Phase:** Automatically place Take Profit and Stop Loss orders immediately after an entry is filled.
-    - **Exit Phase:** Automate position closing based on custom technical conditions.
+- **Wakelock Support:** Keeps the device screen on while automated strategies are actively running.
 - **Secure Authentication:** All private requests are signed with HMAC SHA256 as required by Binance API.
 
 ## Architecture
 This project follows the **MVVM (Model-View-ViewModel)** architectural pattern using the `provider` package. 
 
-- **Models:** Structured Dart classes (`AccountInformation`, `PositionRisk`, `Trade`, etc.) provide a single source of truth for all API data, ensuring type safety and robust parsing.
+- **Models:** Structured Dart classes (`AccountInformation`, `PositionRisk`, `Trade`, `Strategy`, etc.) provide a single source of truth for all API data, ensuring type safety and robust parsing.
 - **ViewModels:** `ChangeNotifier` classes that handle business logic, state management, and interaction with the `BinanceService`.
 - **Views:** Declarative UI components built with Flutter, focusing solely on rendering state and handling user input.
 - **Services:** `BinanceService` provides an authenticated, documented interface to the Binance Futures API.
@@ -54,3 +57,4 @@ This separation ensures a clean codebase, promoting maintainability and high sta
 - **Charting:** k_chart_plus
 - **Security:** crypto (HMAC SHA256)
 - **Networking:** http, web_socket_channel
+- **Device Support:** wakelock_plus
