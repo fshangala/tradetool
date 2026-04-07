@@ -76,10 +76,12 @@ class DashboardViewModel extends ChangeNotifier {
 
   // Strategy Execution State
   final Map<String, String?> _activeStrategyIds = {}; // symbol -> strategyId
-  final Map<String, String> _activeStrategyPhases = {}; // symbol -> phase (entry, protection, exit)
+  final Map<String, String> _activeStrategyPhases = {}; // symbol -> phase (entry, exit)
+  final Map<String, String?> _failedActions = {}; // symbol -> failedActionName ('entry', 'protection', 'exit')
   
   String? getActiveStrategyId(String symbol) => _activeStrategyIds[symbol];
   String getActiveStrategyPhase(String symbol) => _activeStrategyPhases[symbol] ?? 'none';
+  String? getFailedAction(String symbol) => _failedActions[symbol];
 
   void setStrategyForSymbol(String symbol, String? strategyId) {
     if (isSymbolLocked(symbol)) return;
@@ -89,6 +91,7 @@ class DashboardViewModel extends ChangeNotifier {
     } else {
       _activeStrategyPhases.remove(symbol);
     }
+    _failedActions.remove(symbol);
     _updateWakelock();
     notifyListeners();
   }
@@ -104,7 +107,6 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   bool isSymbolLocked(String symbol) {
-    // Locked if there's an active position AND a strategy was selected
     final hasPosition = _positions.any((p) => p.symbol == symbol);
     return hasPosition && _activeStrategyIds[symbol] != null;
   }
@@ -173,7 +175,6 @@ class DashboardViewModel extends ChangeNotifier {
 
   void _onSettingsChanged() {
     _updateBinanceService();
-    // Reset symbol if it's no longer in the selected list
     if (!settingsViewModel.selectedSymbols.contains(_currentSymbol)) {
       if (settingsViewModel.selectedSymbols.isNotEmpty) {
         _currentSymbol = settingsViewModel.selectedSymbols.first;
@@ -184,7 +185,7 @@ class DashboardViewModel extends ChangeNotifier {
 
   Future<void> _init() async {
     _isLoading = true;
-    _datas = []; // Clear old data
+    _datas = [];
     notifyListeners();
 
     await Future.wait([
@@ -316,6 +317,7 @@ class DashboardViewModel extends ChangeNotifier {
       notificationViewModel.error('Failed to close position: $e');
       _isPositionsLoading = false;
       notifyListeners();
+      rethrow;
     }
   }
 
@@ -361,7 +363,6 @@ class DashboardViewModel extends ChangeNotifier {
           _secondaryIndicators,
         );
 
-        // Run strategy evaluation
         _runStrategyEvaluation(_currentSymbol);
 
         notifyListeners();
@@ -370,6 +371,8 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   void _runStrategyEvaluation(String symbol) {
+    if (_failedActions[symbol] != null) return;
+
     final strategyId = _activeStrategyIds[symbol];
     if (strategyId == null) return;
 
@@ -380,31 +383,43 @@ class DashboardViewModel extends ChangeNotifier {
 
     if (phase == 'entry') {
       _processEntryPhase(symbol, strategy);
-    } else if (phase == 'protection') {
-      _processProtectionPhase(symbol, strategy);
     } else if (phase == 'exit') {
       _processExitPhase(symbol, strategy);
     }
   }
 
   Future<void> _processEntryPhase(String symbol, Strategy strategy) async {
-    // Only entry if no position is open for this symbol
     final hasPosition = _positions.any((p) => p.symbol == symbol);
     if (hasPosition) {
-      _activeStrategyPhases[symbol] = 'protection';
+      _activeStrategyPhases[symbol] = 'exit';
       return;
     }
 
-    if (_evaluatePhase(strategy.entryPhase, _datas)) {
-      logger.i('Entry conditions met for $symbol using ${strategy.name}');
-      // For MVP, always Long. In a real app, Strategy should define side.
-      await placeMarketOrder('BUY', percent: strategy.walletPercentage / 100);
-      _activeStrategyPhases[symbol] = 'protection';
+    if (_evaluatePhase(strategy.longEntry.conditions, _datas)) {
+      await _executeEntry(symbol, strategy, 'BUY', strategy.longEntry);
+    } else if (_evaluatePhase(strategy.shortEntry.conditions, _datas)) {
+      await _executeEntry(symbol, strategy, 'SELL', strategy.shortEntry);
+    }
+  }
+
+  Future<void> _executeEntry(String symbol, Strategy strategy, String side, EntrySettings entry) async {
+    logger.i('$side entry conditions met for $symbol using ${strategy.name}');
+    try {
+      await placeMarketOrder(side, percent: strategy.walletPercentage / 100);
+      _activeStrategyPhases[symbol] = 'exit';
+      
+      if (entry.useProtection) {
+        await _placeProtectionOrdersForSymbol(symbol, entry.takeProfit, entry.stopLoss);
+      }
+      notifyListeners();
+    } catch (e) {
+      logger.e('Entry execution failed: $e');
+      _failedActions[symbol] = 'entry';
       notifyListeners();
     }
   }
 
-  Future<void> _processProtectionPhase(String symbol, Strategy strategy) async {
+  Future<void> _placeProtectionOrdersForSymbol(String symbol, double tpPercent, double slPercent) async {
     final positions = _positions.where((p) => p.symbol == symbol).toList();
     if (positions.isEmpty) return;
 
@@ -413,16 +428,12 @@ class DashboardViewModel extends ChangeNotifier {
     if (entryPrice <= 0) return;
 
     final isLong = position.positionAmt > 0;
-    final tpPercent = strategy.protectionPhase.takeProfitPercentage / 100;
-    final slPercent = strategy.protectionPhase.stopLossPercentage / 100;
-
-    final tpPrice = isLong ? entryPrice * (1 + tpPercent) : entryPrice * (1 - tpPercent);
-    final slPrice = isLong ? entryPrice * (1 - slPercent) : entryPrice * (1 + slPercent);
+    final tpPrice = isLong ? entryPrice * (1 + tpPercent / 100) : entryPrice * (1 - tpPercent / 100);
+    final slPrice = isLong ? entryPrice * (1 - slPercent / 100) : entryPrice * (1 + slPercent / 100);
 
     try {
       logger.i('Setting protection for $symbol: TP at $tpPrice, SL at $slPrice');
       
-      // Place Take Profit Market algo order
       await _binanceService.placeAlgoOrder(
         symbol: symbol,
         side: isLong ? 'SELL' : 'BUY',
@@ -433,7 +444,6 @@ class DashboardViewModel extends ChangeNotifier {
         positionSide: position.positionSide,
       );
 
-      // Place Stop Loss Market algo order
       await _binanceService.placeAlgoOrder(
         symbol: symbol,
         side: isLong ? 'SELL' : 'BUY',
@@ -444,42 +454,91 @@ class DashboardViewModel extends ChangeNotifier {
         positionSide: position.positionSide,
       );
 
-      _activeStrategyPhases[symbol] = 'exit';
       notificationViewModel.success('Protection orders placed for $symbol');
-      notifyListeners();
     } catch (e) {
       logger.e('Error placing protection orders: $e');
-      // If protection fails, we still move to exit phase to monitor conditions
-      _activeStrategyPhases[symbol] = 'exit';
+      notificationViewModel.error('Failed to place protection orders: $e');
+      _failedActions[symbol] = 'protection';
+      notifyListeners();
     }
   }
 
   Future<void> _processExitPhase(String symbol, Strategy strategy) async {
-    final positions = _positions.where((p) => p.symbol == symbol).toList();
-    if (positions.isEmpty) {
-      // Position closed (likely by TP/SL or manually)
+    final symbolPositions = _positions.where((p) => p.symbol == symbol).toList();
+    if (symbolPositions.isEmpty) {
       _activeStrategyIds.remove(symbol);
       _activeStrategyPhases.remove(symbol);
+      _failedActions.remove(symbol);
       _updateWakelock();
       notifyListeners();
       return;
     }
 
-    if (_evaluatePhase(strategy.exitPhase, _datas)) {
-      logger.i('Exit conditions met for $symbol using ${strategy.name}');
-      await closePosition(positions.first);
-      _activeStrategyIds.remove(symbol);
-      _activeStrategyPhases.remove(symbol);
-      _updateWakelock();
-      notifyListeners();
+    final position = symbolPositions.first;
+    final isLong = position.positionAmt > 0;
+    final exitConditions = isLong ? strategy.longExit.conditions : strategy.shortExit.conditions;
+
+    if (_evaluatePhase(exitConditions, _datas)) {
+      logger.i('${isLong ? "Long" : "Short"} exit conditions met for $symbol using ${strategy.name}');
+      try {
+        await closePosition(position);
+        _activeStrategyIds.remove(symbol);
+        _activeStrategyPhases.remove(symbol);
+        _failedActions.remove(symbol);
+        _updateWakelock();
+        notifyListeners();
+      } catch (e) {
+        logger.e('Exit execution failed: $e');
+        _failedActions[symbol] = 'exit';
+        notifyListeners();
+      }
     }
   }
 
-  bool _evaluatePhase(StrategyPhase phase, List<KLineEntity> data) {
-    if (phase.conditions.isEmpty) return false;
-    
-    // Always AND for now
-    for (var condition in phase.conditions) {
+  Future<void> retryAction(String symbol) async {
+    final failedAction = _failedActions[symbol];
+    if (failedAction == null) return;
+
+    final strategyId = _activeStrategyIds[symbol];
+    if (strategyId == null) return;
+
+    final strategy = strategyViewModel.getStrategyById(strategyId);
+    if (strategy == null) return;
+
+    _failedActions.remove(symbol);
+    notifyListeners();
+
+    try {
+      if (failedAction == 'entry') {
+        // We don't know if it was long or short evaluation that triggered retry easily without re-evaluating
+        // But retry usually means user knows it failed and wants to try again with same conditions.
+        // We'll just run evaluation again immediately.
+        _runStrategyEvaluation(symbol);
+      } else if (failedAction == 'protection') {
+        final symbolPositions = _positions.where((p) => p.symbol == symbol).toList();
+        if (symbolPositions.isNotEmpty) {
+          final isLong = symbolPositions.first.positionAmt > 0;
+          final entry = isLong ? strategy.longEntry : strategy.shortEntry;
+          await _placeProtectionOrdersForSymbol(symbol, entry.takeProfit, entry.stopLoss);
+        }
+      } else if (failedAction == 'exit') {
+        final symbolPositions = _positions.where((p) => p.symbol == symbol).toList();
+        if (symbolPositions.isNotEmpty) {
+          await closePosition(symbolPositions.first);
+          _activeStrategyIds.remove(symbol);
+          _activeStrategyPhases.remove(symbol);
+          _updateWakelock();
+        }
+      }
+      notifyListeners();
+    } catch (e) {
+      // If retry fails, it will set failedAction again inside the methods
+    }
+  }
+
+  bool _evaluatePhase(List<Condition> conditions, List<KLineEntity> data) {
+    if (conditions.isEmpty) return false;
+    for (var condition in conditions) {
       if (!_evaluateCondition(condition, data)) return false;
     }
     return true;
@@ -535,7 +594,7 @@ class DashboardViewModel extends ChangeNotifier {
       case 'RSI':
         return entity.rsi ?? 50.0;
       case 'EMA7':
-        return entity.maValueList?[0] ?? entity.close; // maValueList typically contains EMAs/MAs depending on setup
+        return entity.maValueList?[0] ?? entity.close;
       case 'EMA25':
         return entity.maValueList?[1] ?? entity.close;
       case 'EMA99':
@@ -564,14 +623,12 @@ class DashboardViewModel extends ChangeNotifier {
     final marginToUse = _availableBalance * percent;
     final quantity = marginToUse / currentPrice;
 
-    // Simple rounding for quantity (e.g., BTCUSDT usually supports 3 decimals)
-    // In a real app, we should fetch exchangeInfo for precision
     final formattedQuantity = double.parse(quantity.toStringAsFixed(3));
 
     if (formattedQuantity <= 0) {
       logger.w('Calculated quantity is too small: $formattedQuantity');
       notificationViewModel.error('Available margin too low for order');
-      return;
+      throw Exception('Insufficient margin');
     }
 
     try {
@@ -594,11 +651,13 @@ class DashboardViewModel extends ChangeNotifier {
       notificationViewModel.success(
         '${side == 'BUY' ? 'Long' : 'Short'} order filled: $formattedQuantity $_currentSymbol',
       );
-      await _fetchAccountInfo(); // Refresh positions and balance
+      await _fetchAccountInfo();
+      await _fetchPositions();
       notifyListeners();
     } catch (e) {
       logger.e('Error placing order: $e');
       notificationViewModel.error('Failed to place order: $e');
+      rethrow;
     }
   }
 
@@ -610,7 +669,7 @@ class DashboardViewModel extends ChangeNotifier {
   void dispose() {
     _wsChannel?.sink.close();
     settingsViewModel.removeListener(_onSettingsChanged);
-    WakelockPlus.disable(); // Force disable on dispose
+    WakelockPlus.disable();
     super.dispose();
   }
 }

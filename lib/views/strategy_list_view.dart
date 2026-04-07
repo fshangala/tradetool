@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../viewmodels/strategy_viewmodel.dart';
 import '../models/strategy.dart';
 import 'strategy_edit_view.dart';
+import '../core/theme.dart';
 
 class StrategyListView extends StatelessWidget {
   const StrategyListView({super.key});
@@ -12,17 +13,7 @@ class StrategyListView extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.black,
-              Colors.blueGrey.withValues(alpha: 0.2),
-              Colors.black,
-            ],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: BinanceTheme.darkGradient),
         child: SafeArea(
           child: Column(
             children: [
@@ -31,7 +22,7 @@ class StrategyListView extends StatelessWidget {
                 child: Consumer<StrategyViewModel>(
                   builder: (context, viewModel, child) {
                     if (viewModel.isLoading) {
-                      return const Center(child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator(color: BinanceTheme.yellow));
                     }
 
                     if (viewModel.strategies.isEmpty) {
@@ -59,7 +50,7 @@ class StrategyListView extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFFF0B90B),
+        backgroundColor: BinanceTheme.yellow,
         onPressed: () {
           Navigator.push(
             context,
@@ -125,7 +116,7 @@ class StrategyListView extends StatelessWidget {
                   Text(
                     strategy.name,
                     style: const TextStyle(
-                      color: Color(0xFFF0B90B),
+                      color: BinanceTheme.yellow,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -137,11 +128,18 @@ class StrategyListView extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              _buildPhaseSummary('Entry', strategy.entryPhase),
-              const SizedBox(height: 4),
-              _buildProtectionSummary(strategy.protectionPhase),
-              const SizedBox(height: 4),
-              _buildPhaseSummary('Exit', strategy.exitPhase),
+              if (strategy.longEntry.conditions.isNotEmpty) ...[
+                _buildPhaseSummary('Long Entry', strategy.longEntry.conditions),
+                _buildProtectionSummary(strategy.longEntry),
+                const SizedBox(height: 8),
+              ],
+              if (strategy.shortEntry.conditions.isNotEmpty) ...[
+                _buildPhaseSummary('Short Entry', strategy.shortEntry.conditions),
+                _buildProtectionSummary(strategy.shortEntry),
+                const SizedBox(height: 8),
+              ],
+              _buildPhaseSummary('Long Exit', strategy.longExit.conditions),
+              _buildPhaseSummary('Short Exit', strategy.shortExit.conditions),
             ],
           ),
         ),
@@ -149,17 +147,17 @@ class StrategyListView extends StatelessWidget {
     );
   }
 
-  Widget _buildPhaseSummary(String title, StrategyPhase phase) {
+  Widget _buildPhaseSummary(String title, List<Condition> conditions) {
     return Row(
       children: [
         Text(
           '$title: ',
-          style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+          style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 12),
         ),
         Expanded(
           child: Text(
-            phase.conditions.map((c) => _conditionToString(c)).join(', '),
-            style: const TextStyle(color: Colors.white54, fontSize: 13),
+            conditions.isEmpty ? 'None' : conditions.map((c) => _conditionToString(c)).join(', '),
+            style: const TextStyle(color: Colors.white54, fontSize: 12),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -167,27 +165,22 @@ class StrategyListView extends StatelessWidget {
     );
   }
 
-  Widget _buildProtectionSummary(ProtectionSettings protection) {
-    return Row(
-      children: [
-        const Text(
-          'Protection: ',
-          style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
-        ),
-        Text(
-          'TP: ${protection.takeProfitPercentage}% | SL: ${protection.stopLossPercentage}%',
-          style: const TextStyle(color: Colors.white54, fontSize: 13),
-        ),
-      ],
+  Widget _buildProtectionSummary(EntrySettings entry) {
+    if (!entry.useProtection) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(left: 12.0),
+      child: Text(
+        'Protection: TP ${entry.takeProfit}% | SL ${entry.stopLoss}%',
+        style: const TextStyle(color: BinanceTheme.yellow, fontSize: 10),
+      ),
     );
   }
 
   String _conditionToString(Condition c) {
-    if (c.type == ConditionType.price) {
-      return 'Price ${_opToString(c.op)} ${c.value}';
-    } else {
-      return '${c.indicatorName} ${_opToString(c.op)} ${c.value}';
-    }
+    final opStr = _opToString(c.op);
+    String leftSide = c.type == ConditionType.price ? 'Price' : c.indicatorName!;
+    String rightSide = c.targetIndicatorName ?? c.value.toString();
+    return '$leftSide $opStr $rightSide';
   }
 
   String _opToString(Operator op) {

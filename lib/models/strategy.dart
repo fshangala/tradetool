@@ -23,7 +23,7 @@ class Condition {
     this.params,
     required this.op,
     required this.value,
-    this.targetType = ConditionType.price, // Default for backward compatibility
+    this.targetType = ConditionType.price,
     this.targetIndicatorName,
   });
 
@@ -36,7 +36,7 @@ class Condition {
       value: (json['value'] as num).toDouble(),
       targetType: json['targetType'] != null
           ? ConditionType.values.firstWhere((e) => e.name == json['targetType'])
-          : ConditionType.price, // If null, assume it's comparing with 'value' which was old behavior
+          : ConditionType.price,
       targetIndicatorName: json['targetIndicatorName'],
     );
   }
@@ -56,7 +56,7 @@ class Condition {
 
 class StrategyPhase {
   final List<Condition> conditions;
-  final String logicOperator; // Always 'AND' for now
+  final String logicOperator;
 
   StrategyPhase({
     required this.conditions,
@@ -80,26 +80,36 @@ class StrategyPhase {
   }
 }
 
-class ProtectionSettings {
-  final double takeProfitPercentage;
-  final double stopLossPercentage;
+class EntrySettings {
+  final List<Condition> conditions;
+  final bool useProtection;
+  final double takeProfit;
+  final double stopLoss;
 
-  ProtectionSettings({
-    required this.takeProfitPercentage,
-    required this.stopLossPercentage,
+  EntrySettings({
+    required this.conditions,
+    this.useProtection = false,
+    this.takeProfit = 1.0,
+    this.stopLoss = 1.0,
   });
 
-  factory ProtectionSettings.fromJson(Map<String, dynamic> json) {
-    return ProtectionSettings(
-      takeProfitPercentage: (json['takeProfitPercentage'] as num).toDouble(),
-      stopLossPercentage: (json['stopLossPercentage'] as num).toDouble(),
+  factory EntrySettings.fromJson(Map<String, dynamic> json) {
+    return EntrySettings(
+      conditions: (json['conditions'] as List)
+          .map((c) => Condition.fromJson(c))
+          .toList(),
+      useProtection: json['useProtection'] ?? false,
+      takeProfit: (json['takeProfit'] as num?)?.toDouble() ?? 1.0,
+      stopLoss: (json['stopLoss'] as num?)?.toDouble() ?? 1.0,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'takeProfitPercentage': takeProfitPercentage,
-      'stopLossPercentage': stopLossPercentage,
+      'conditions': conditions.map((c) => c.toJson()).toList(),
+      'useProtection': useProtection,
+      'takeProfit': takeProfit,
+      'stopLoss': stopLoss,
     };
   }
 }
@@ -107,18 +117,20 @@ class ProtectionSettings {
 class Strategy {
   final String id;
   final String name;
-  final double walletPercentage; // 1 to 80
-  final StrategyPhase entryPhase;
-  final ProtectionSettings protectionPhase;
-  final StrategyPhase exitPhase;
+  final double walletPercentage;
+  final EntrySettings longEntry;
+  final EntrySettings shortEntry;
+  final StrategyPhase longExit;
+  final StrategyPhase shortExit;
 
   Strategy({
     required this.id,
     required this.name,
     this.walletPercentage = 40.0,
-    required this.entryPhase,
-    required this.protectionPhase,
-    required this.exitPhase,
+    required this.longEntry,
+    required this.shortEntry,
+    required this.longExit,
+    required this.shortExit,
   });
 
   factory Strategy.fromJson(Map<String, dynamic> json) {
@@ -126,9 +138,10 @@ class Strategy {
       id: json['id'],
       name: json['name'],
       walletPercentage: (json['walletPercentage'] as num?)?.toDouble() ?? 40.0,
-      entryPhase: StrategyPhase.fromJson(json['entryPhase']),
-      protectionPhase: ProtectionSettings.fromJson(json['protectionPhase']),
-      exitPhase: StrategyPhase.fromJson(json['exitPhase']),
+      longEntry: EntrySettings.fromJson(json['longEntry']),
+      shortEntry: EntrySettings.fromJson(json['shortEntry']),
+      longExit: StrategyPhase.fromJson(json['longExit']),
+      shortExit: StrategyPhase.fromJson(json['shortExit']),
     );
   }
 
@@ -137,9 +150,10 @@ class Strategy {
       'id': id,
       'name': name,
       'walletPercentage': walletPercentage,
-      'entryPhase': entryPhase.toJson(),
-      'protectionPhase': protectionPhase.toJson(),
-      'exitPhase': exitPhase.toJson(),
+      'longEntry': longEntry.toJson(),
+      'shortEntry': shortEntry.toJson(),
+      'longExit': longExit.toJson(),
+      'shortExit': shortExit.toJson(),
     };
   }
 }

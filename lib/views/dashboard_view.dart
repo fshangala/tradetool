@@ -62,7 +62,7 @@ class DashboardView extends StatelessWidget {
                           child: ListView(
                             children: [
                               _buildChart(viewModel),
-                              _buildTradeButtons(context, viewModel),
+                              _buildRetryButton(context, viewModel),
                               _buildPositions(context, viewModel),
                             ],
                           ),
@@ -77,88 +77,33 @@ class DashboardView extends StatelessWidget {
     );
   }
 
-  Widget _buildTradeButtons(BuildContext context, DashboardViewModel viewModel) {
+  Widget _buildRetryButton(BuildContext context, DashboardViewModel viewModel) {
+    final failedAction = viewModel.getFailedAction(viewModel.currentSymbol);
+    if (failedAction == null) return const SizedBox.shrink();
+
+    String label = 'Retry Action';
+    if (failedAction == 'entry') label = 'Retry Entry';
+    if (failedAction == 'protection') label = 'Retry Protection';
+    if (failedAction == 'exit') label = 'Retry Close';
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () => _showOrderConfirmation(context, viewModel, 'BUY'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: BinanceTheme.green,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'LONG (40%)',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () =>
-                  _showOrderConfirmation(context, viewModel, 'SELL'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: BinanceTheme.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'SHORT (40%)',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showOrderConfirmation(
-    BuildContext context,
-    DashboardViewModel viewModel,
-    String side,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: BinanceTheme.surfaceColor,
-        title: Text(
-          'Confirm ${side == 'BUY' ? 'Long' : 'Short'} Order',
-          style: const TextStyle(color: Colors.white),
+      child: ElevatedButton.icon(
+        onPressed: () => viewModel.retryAction(viewModel.currentSymbol),
+        icon: const Icon(Icons.replay),
+        label: Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        content: Text(
-          'Are you sure you want to open a $side market order for 40% of your available margin on ${viewModel.currentSymbol}?',
-          style: const TextStyle(color: BinanceTheme.secondaryTextColor),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: BinanceTheme.yellow,
+          foregroundColor: Colors.black,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          minimumSize: const Size(double.infinity, 50),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              viewModel.placeMarketOrder(side);
-              Navigator.pop(context);
-            },
-            child: Text(
-              'Confirm',
-              style: TextStyle(
-                color: side == 'BUY' ? BinanceTheme.green : BinanceTheme.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -267,7 +212,7 @@ class DashboardView extends StatelessWidget {
                   items: [
                     const DropdownMenuItem<String?>(
                       value: null,
-                      child: Text('Manual Trading', style: TextStyle(color: Colors.white54, fontSize: 14)),
+                      child: Text('Manual Trading (Auto Off)', style: TextStyle(color: Colors.white54, fontSize: 14)),
                     ),
                     ...strategies.map((strategy) {
                       return DropdownMenuItem<String?>(

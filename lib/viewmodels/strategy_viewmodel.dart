@@ -44,24 +44,46 @@ class StrategyViewModel extends ChangeNotifier {
     return Strategy(
       id: const Uuid().v4(),
       name: 'RSI Mean Reversion',
-      entryPhase: StrategyPhase(conditions: [
-        Condition(
-          type: ConditionType.indicator,
-          indicatorName: 'RSI',
-          op: Operator.lessThan,
-          value: 30,
-        ),
-      ]),
-      protectionPhase: ProtectionSettings(
-        takeProfitPercentage: 2.0,
-        stopLossPercentage: 1.0,
+      longEntry: EntrySettings(
+        conditions: [
+          Condition(
+            type: ConditionType.indicator,
+            indicatorName: 'RSI',
+            op: Operator.lessThan,
+            value: 30,
+          ),
+        ],
+        useProtection: true,
+        takeProfit: 2.0,
+        stopLoss: 1.0,
       ),
-      exitPhase: StrategyPhase(conditions: [
+      shortEntry: EntrySettings(
+        conditions: [
+          Condition(
+            type: ConditionType.indicator,
+            indicatorName: 'RSI',
+            op: Operator.greaterThan,
+            value: 70,
+          ),
+        ],
+        useProtection: true,
+        takeProfit: 2.0,
+        stopLoss: 1.0,
+      ),
+      longExit: StrategyPhase(conditions: [
         Condition(
           type: ConditionType.indicator,
           indicatorName: 'RSI',
           op: Operator.greaterThan,
-          value: 70,
+          value: 50,
+        ),
+      ]),
+      shortExit: StrategyPhase(conditions: [
+        Condition(
+          type: ConditionType.indicator,
+          indicatorName: 'RSI',
+          op: Operator.lessThan,
+          value: 50,
         ),
       ]),
     );

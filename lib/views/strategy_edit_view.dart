@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/strategy.dart';
 import '../viewmodels/strategy_viewmodel.dart';
+import '../core/theme.dart';
 
 class StrategyEditView extends StatefulWidget {
   final Strategy? strategy;
@@ -17,11 +18,23 @@ class _StrategyEditViewState extends State<StrategyEditView> {
   final _formKey = GlobalKey<FormState>();
   late String _id;
   late TextEditingController _nameController;
-  late List<Condition> _entryConditions;
-  late List<Condition> _exitConditions;
   late double _walletPercentage;
-  late double _takeProfit;
-  late double _stopLoss;
+
+  // Long Entry Settings
+  late List<Condition> _longEntryConditions;
+  late bool _longUseProtection;
+  late double _longTP;
+  late double _longSL;
+
+  // Short Entry Settings
+  late List<Condition> _shortEntryConditions;
+  late bool _shortUseProtection;
+  late double _shortTP;
+  late double _shortSL;
+
+  // Exit Phases
+  late List<Condition> _longExitConditions;
+  late List<Condition> _shortExitConditions;
 
   @override
   void initState() {
@@ -29,11 +42,23 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     final s = widget.strategy;
     _id = s?.id ?? const Uuid().v4();
     _nameController = TextEditingController(text: s?.name ?? '');
-    _entryConditions = List.from(s?.entryPhase.conditions ?? []);
-    _exitConditions = List.from(s?.exitPhase.conditions ?? []);
     _walletPercentage = s?.walletPercentage ?? 40.0;
-    _takeProfit = s?.protectionPhase.takeProfitPercentage ?? 1.0;
-    _stopLoss = s?.protectionPhase.stopLossPercentage ?? 1.0;
+
+    // Long Entry
+    _longEntryConditions = List.from(s?.longEntry.conditions ?? []);
+    _longUseProtection = s?.longEntry.useProtection ?? false;
+    _longTP = s?.longEntry.takeProfit ?? 1.0;
+    _longSL = s?.longEntry.stopLoss ?? 1.0;
+
+    // Short Entry
+    _shortEntryConditions = List.from(s?.shortEntry.conditions ?? []);
+    _shortUseProtection = s?.shortEntry.useProtection ?? false;
+    _shortTP = s?.shortEntry.takeProfit ?? 1.0;
+    _shortSL = s?.shortEntry.stopLoss ?? 1.0;
+
+    // Exits
+    _longExitConditions = List.from(s?.longExit.conditions ?? []);
+    _shortExitConditions = List.from(s?.shortExit.conditions ?? []);
   }
 
   @override
@@ -44,9 +69,9 @@ class _StrategyEditViewState extends State<StrategyEditView> {
 
   void _save() {
     if (_formKey.currentState!.validate()) {
-      if (_entryConditions.isEmpty || _exitConditions.isEmpty) {
+      if (_longEntryConditions.isEmpty && _shortEntryConditions.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Both Entry and Exit phases must have at least one condition.')),
+          const SnackBar(content: Text('At least one entry phase (Long or Short) must have conditions.')),
         );
         return;
       }
@@ -55,12 +80,20 @@ class _StrategyEditViewState extends State<StrategyEditView> {
         id: _id,
         name: _nameController.text,
         walletPercentage: _walletPercentage,
-        entryPhase: StrategyPhase(conditions: _entryConditions),
-        protectionPhase: ProtectionSettings(
-          takeProfitPercentage: _takeProfit,
-          stopLossPercentage: _stopLoss,
+        longEntry: EntrySettings(
+          conditions: _longEntryConditions,
+          useProtection: _longUseProtection,
+          takeProfit: _longTP,
+          stopLoss: _longSL,
         ),
-        exitPhase: StrategyPhase(conditions: _exitConditions),
+        shortEntry: EntrySettings(
+          conditions: _shortEntryConditions,
+          useProtection: _shortUseProtection,
+          takeProfit: _shortTP,
+          stopLoss: _shortSL,
+        ),
+        longExit: StrategyPhase(conditions: _longExitConditions),
+        shortExit: StrategyPhase(conditions: _shortExitConditions),
       );
 
       final viewModel = Provider.of<StrategyViewModel>(context, listen: false);
@@ -82,7 +115,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
         title: Text(widget.strategy == null ? 'New Strategy' : 'Edit Strategy'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check, color: Color(0xFFF0B90B)),
+            icon: const Icon(Icons.check, color: BinanceTheme.yellow),
             onPressed: _save,
           ),
         ],
@@ -91,6 +124,36 @@ class _StrategyEditViewState extends State<StrategyEditView> {
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
+          children: [
+            _buildGeneralSection(),
+            const SizedBox(height: 24),
+            _buildEntrySection('LONG ENTRY', _longEntryConditions, _longUseProtection, _longTP, _longSL, 
+              (val) => setState(() => _longUseProtection = val),
+              (val) => setState(() => _longTP = val),
+              (val) => setState(() => _longSL = val)),
+            const SizedBox(height: 16),
+            _buildEntrySection('SHORT ENTRY', _shortEntryConditions, _shortUseProtection, _shortTP, _shortSL,
+              (val) => setState(() => _shortUseProtection = val),
+              (val) => setState(() => _shortTP = val),
+              (val) => setState(() => _shortSL = val)),
+            const SizedBox(height: 16),
+            _buildExitSection('LONG EXIT', _longExitConditions),
+            const SizedBox(height: 16),
+            _buildExitSection('SHORT EXIT', _shortExitConditions),
+            const SizedBox(height: 80),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGeneralSection() {
+    return Card(
+      color: Colors.white.withValues(alpha: 0.05),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSectionTitle('General Info'),
             TextFormField(
@@ -127,102 +190,128 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                 return null;
               },
             ),
-            const SizedBox(height: 24),
-            _buildPhaseSection('Entry Phase (Buy/Long)', _entryConditions),
-            const SizedBox(height: 24),
-            _buildProtectionSection(),
-            const SizedBox(height: 24),
-            _buildPhaseSection('Exit Phase (Sell/Close)', _exitConditions),
-            const SizedBox(height: 80),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          color: Color(0xFFF0B90B),
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
+  Widget _buildEntrySection(String title, List<Condition> conditions, bool useProtection, double tp, double sl, 
+      Function(bool) onProtectionChanged, Function(double) onTPChanged, Function(double) onSLChanged) {
+    return Card(
+      color: Colors.white.withValues(alpha: 0.05),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionTitle(title),
+            _buildConditionsList(conditions),
+            const SizedBox(height: 16),
+            const Divider(color: Colors.white10),
+            Row(
+              children: [
+                const Text('Auto Protection (TP/SL)', style: TextStyle(color: Colors.white, fontSize: 14)),
+                const Spacer(),
+                Switch(
+                  value: useProtection,
+                  onChanged: onProtectionChanged,
+                  activeThumbColor: BinanceTheme.yellow,
+                ),
+              ],
+            ),
+            if (useProtection)
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildNumberInput('Take Profit (%)', tp, onTPChanged),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildNumberInput('Stop Loss (%)', sl, onSLChanged),
+                  ),
+                ],
+              ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildPhaseSection(String title, List<Condition> conditions) {
+  Widget _buildExitSection(String title, List<Condition> conditions) {
+    return Card(
+      color: Colors.white.withValues(alpha: 0.05),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionTitle(title),
+            _buildConditionsList(conditions),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConditionsList(List<Condition> conditions) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle(title),
         ...conditions.asMap().entries.map((entry) {
           final index = entry.key;
           final condition = entry.value;
-          return Card(
-            color: Colors.white.withValues(alpha: 0.05),
-            margin: const EdgeInsets.only(bottom: 8),
+          return Container(
+            margin: const EdgeInsets.only(top: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: ListTile(
+              dense: true,
               title: Text(
                 _conditionToString(condition),
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.white, fontSize: 13),
               ),
               trailing: IconButton(
-                icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
+                icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 18),
                 onPressed: () => setState(() => conditions.removeAt(index)),
               ),
             ),
           );
         }),
+        const SizedBox(height: 8),
         TextButton.icon(
           onPressed: () => _showAddConditionDialog(conditions),
-          icon: const Icon(Icons.add, color: Color(0xFFF0B90B)),
-          label: const Text('Add Condition', style: TextStyle(color: Color(0xFFF0B90B))),
+          icon: const Icon(Icons.add, color: BinanceTheme.yellow, size: 16),
+          label: const Text('Add Condition', style: TextStyle(color: BinanceTheme.yellow, fontSize: 12)),
+          style: TextButton.styleFrom(padding: EdgeInsets.zero),
         ),
       ],
     );
   }
 
-  Widget _buildProtectionSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle('Protection Settings'),
-        Row(
-          children: [
-            Expanded(
-              child: _buildNumberInput(
-                'Take Profit (%)',
-                _takeProfit,
-                (val) => setState(() => _takeProfit = val),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildNumberInput(
-                'Stop Loss (%)',
-                _stopLoss,
-                (val) => setState(() => _stopLoss = val),
-              ),
-            ),
-          ],
-        ),
-      ],
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: BinanceTheme.yellow,
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.2,
+      ),
     );
   }
 
   Widget _buildNumberInput(String label, double value, Function(double) onChanged) {
     return TextFormField(
       initialValue: value.toString(),
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: Colors.white, fontSize: 13),
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70),
-        enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+        labelStyle: const TextStyle(color: Colors.white54, fontSize: 11),
+        enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white10)),
       ),
       onChanged: (val) {
         final doubleValue = double.tryParse(val);
@@ -252,8 +341,6 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     ConditionType selectedType = ConditionType.indicator;
     String selectedIndicator = 'RSI';
     Operator selectedOp = Operator.lessThan;
-    
-    // Comparison target state
     bool isComparingWithIndicator = false;
     String targetIndicator = 'EMA25';
     final valueController = TextEditingController();
@@ -269,7 +356,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Source', style: TextStyle(color: Color(0xFFF0B90B), fontSize: 12)),
+                const Text('Source', style: TextStyle(color: BinanceTheme.yellow, fontSize: 12)),
                 DropdownButton<ConditionType>(
                   value: selectedType,
                   dropdownColor: Colors.grey[850],
@@ -292,7 +379,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                     onChanged: (val) => setDialogState(() => selectedIndicator = val!),
                   ),
                 const SizedBox(height: 16),
-                const Text('Operator', style: TextStyle(color: Color(0xFFF0B90B), fontSize: 12)),
+                const Text('Operator', style: TextStyle(color: BinanceTheme.yellow, fontSize: 12)),
                 DropdownButton<Operator>(
                   value: selectedOp,
                   dropdownColor: Colors.grey[850],
@@ -307,14 +394,14 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Compare with', style: TextStyle(color: Color(0xFFF0B90B), fontSize: 12)),
+                    const Text('Compare with', style: TextStyle(color: BinanceTheme.yellow, fontSize: 12)),
                     Row(
                       children: [
                         const Text('Value', style: TextStyle(color: Colors.white54, fontSize: 10)),
                         Switch(
                           value: isComparingWithIndicator,
-                          activeThumbColor: const Color(0xFFF0B90B),
-                          activeTrackColor: const Color(0xFFF0B90B).withValues(alpha: 0.5),
+                          activeThumbColor: BinanceTheme.yellow,
+                          activeTrackColor: BinanceTheme.yellow.withValues(alpha: 0.5),
                           onChanged: (val) => setDialogState(() => isComparingWithIndicator = val),
                         ),
                         const Text('Indicator', style: TextStyle(color: Colors.white54, fontSize: 10)),
@@ -366,13 +453,13 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                     indicatorName: selectedType == ConditionType.indicator ? selectedIndicator : null,
                     op: selectedOp,
                     value: value,
-                    targetType: isComparingWithIndicator ? ConditionType.indicator : ConditionType.price, // value is just a constant
+                    targetType: isComparingWithIndicator ? ConditionType.indicator : ConditionType.price,
                     targetIndicatorName: isComparingWithIndicator ? targetIndicator : null,
                   ));
                 });
                 Navigator.pop(context);
               },
-              child: const Text('Add', style: TextStyle(color: Color(0xFFF0B90B))),
+              child: const Text('Add', style: TextStyle(color: BinanceTheme.yellow)),
             ),
           ],
         ),
