@@ -65,7 +65,8 @@
     - **Financial Simulation:** Accounts for Binance Futures VIP 0 fees (Maker 0.02%, Taker 0.05%) and supports 1x, 5x, 10x, and 20x leverage.
     - **Performance Metrics:** Tracks Gross Profit, Gross Loss, Total Fees, and calculates Net Earnings (PnL - Fees).
     - **Streaming Progress:** Asynchronous evaluation with a real-time progress bar for a smooth UI experience.
-    - **Scrollable Modal:** Dedicated evaluation interface with customizable initial capital, symbol, and interval selection.
+    - **Evaluation Persistence:** Automatically saves the latest evaluation results, input parameters, and a performance-based **5-star rating** to each strategy.
+    - **Enhanced Strategy List:** Displays star ratings and success rates (`profitableTrades / totalTrades`) directly on the main strategy list for at-a-glance performance monitoring.
 
 ## Planned Features
 - **Enhanced Orders:** Support for Limit orders, Stop Loss, and Take Profit.

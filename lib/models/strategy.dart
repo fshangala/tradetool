@@ -118,6 +118,70 @@ class EntrySettings {
   }
 }
 
+class EvaluationResult {
+  final String symbol;
+  final String interval;
+  final double initialCapital;
+  final int leverage;
+  final int totalTrades;
+  final int profitableTrades;
+  final int lossTrades;
+  final double grossProfit;
+  final double grossLoss;
+  final double totalFees;
+  final double netEarnings;
+  final int rating; // 0-5 stars
+
+  EvaluationResult({
+    required this.symbol,
+    required this.interval,
+    required this.initialCapital,
+    required this.leverage,
+    required this.totalTrades,
+    required this.profitableTrades,
+    required this.lossTrades,
+    required this.grossProfit,
+    required this.grossLoss,
+    required this.totalFees,
+    required this.netEarnings,
+    required this.rating,
+  });
+
+  factory EvaluationResult.fromJson(Map<String, dynamic> json) {
+    return EvaluationResult(
+      symbol: json['symbol'],
+      interval: json['interval'],
+      initialCapital: (json['initialCapital'] as num).toDouble(),
+      leverage: json['leverage'],
+      totalTrades: json['totalTrades'],
+      profitableTrades: json['profitableTrades'],
+      lossTrades: json['lossTrades'],
+      grossProfit: (json['grossProfit'] as num).toDouble(),
+      grossLoss: (json['grossLoss'] as num).toDouble(),
+      totalFees: (json['totalFees'] as num).toDouble(),
+      netEarnings: (json['netEarnings'] as num).toDouble(),
+      rating: json['rating'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'symbol': symbol,
+      'interval': interval,
+      'initialCapital': initialCapital,
+      'leverage': leverage,
+      'totalTrades': totalTrades,
+      'profitableTrades': profitableTrades,
+      'lossTrades': lossTrades,
+      'grossProfit': grossProfit,
+      'grossLoss': grossLoss,
+      'totalFees': totalFees,
+      'netEarnings': netEarnings,
+      'rating': rating,
+    };
+  }
+}
+
 class Strategy {
   final String id;
   final String name;
@@ -126,6 +190,7 @@ class Strategy {
   final EntrySettings shortEntry;
   final StrategyPhase longExit;
   final StrategyPhase shortExit;
+  final EvaluationResult? lastResult;
 
   Strategy({
     required this.id,
@@ -135,6 +200,7 @@ class Strategy {
     required this.shortEntry,
     required this.longExit,
     required this.shortExit,
+    this.lastResult,
   });
 
   factory Strategy.fromJson(Map<String, dynamic> json) {
@@ -146,6 +212,9 @@ class Strategy {
       shortEntry: EntrySettings.fromJson(json['shortEntry']),
       longExit: StrategyPhase.fromJson(json['longExit']),
       shortExit: StrategyPhase.fromJson(json['shortExit']),
+      lastResult: json['lastResult'] != null 
+          ? EvaluationResult.fromJson(json['lastResult']) 
+          : null,
     );
   }
 
@@ -158,6 +227,28 @@ class Strategy {
       'shortEntry': shortEntry.toJson(),
       'longExit': longExit.toJson(),
       'shortExit': shortExit.toJson(),
+      'lastResult': lastResult?.toJson(),
     };
+  }
+
+  Strategy copyWith({
+    String? name,
+    double? walletPercentage,
+    EntrySettings? longEntry,
+    EntrySettings? shortEntry,
+    StrategyPhase? longExit,
+    StrategyPhase? shortExit,
+    EvaluationResult? lastResult,
+  }) {
+    return Strategy(
+      id: id,
+      name: name ?? this.name,
+      walletPercentage: walletPercentage ?? this.walletPercentage,
+      longEntry: longEntry ?? this.longEntry,
+      shortEntry: shortEntry ?? this.shortEntry,
+      longExit: longExit ?? this.longExit,
+      shortExit: shortExit ?? this.shortExit,
+      lastResult: lastResult ?? this.lastResult,
+    );
   }
 }

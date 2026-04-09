@@ -47,6 +47,9 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
   String? _error;
   String? get error => _error;
 
+  EvaluationResult? _lastResult;
+  EvaluationResult? get lastResult => _lastResult;
+
   void reset() {
     _isEvaluating = false;
     _progress = 0.0;
@@ -171,6 +174,20 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
       }
       
       _progress = 1.0;
+      _lastResult = EvaluationResult(
+        symbol: symbol,
+        interval: interval,
+        initialCapital: _initialCapital,
+        leverage: _leverage,
+        totalTrades: _totalTrades,
+        profitableTrades: _profitableTrades,
+        lossTrades: _lossTrades,
+        grossProfit: _totalGrossProfitUsdt,
+        grossLoss: _totalGrossLossUsdt,
+        totalFees: _totalFeesUsdt,
+        netEarnings: totalEarnings,
+        rating: _calculateRating(),
+      );
     } catch (e) {
       logger.e('Evaluation error: $e');
       _error = e.toString();
@@ -178,6 +195,22 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
       _isEvaluating = false;
       notifyListeners();
     }
+  }
+
+  int _calculateRating() {
+    if (_totalTrades == 0) return 0;
+
+    final profitFactor = _totalGrossLossUsdt.abs() > 0 
+        ? _totalGrossProfitUsdt / _totalGrossLossUsdt.abs() 
+        : (_totalGrossProfitUsdt > 0 ? 5.0 : 0.0);
+    
+    final earningsPercent = (totalEarnings / _initialCapital) * 100;
+
+    if (earningsPercent > 10 && profitFactor > 2.0) return 5;
+    if (earningsPercent > 5 && profitFactor > 1.5) return 4;
+    if (earningsPercent > 0 && profitFactor > 1.1) return 3;
+    if (earningsPercent > -5) return 2;
+    return 1;
   }
 
   void _closeTrade(double entry, double exit, String side, double walletPercentage) {

@@ -128,6 +128,10 @@ class _StrategyEditViewState extends State<StrategyEditView> {
           padding: const EdgeInsets.all(16),
           children: [
             _buildGeneralSection(),
+            if (widget.strategy?.lastResult != null) ...[
+              const SizedBox(height: 16),
+              _buildLastEvaluationSection(widget.strategy!.lastResult!),
+            ],
             const SizedBox(height: 24),
             _buildEntrySection('LONG ENTRY', _longEntryConditions, _longUseProtection, _longTP, _longSL, 
               (val) => setState(() => _longUseProtection = val),
@@ -148,6 +152,64 @@ class _StrategyEditViewState extends State<StrategyEditView> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildLastEvaluationSection(EvaluationResult result) {
+    return Card(
+      color: BinanceTheme.yellow.withValues(alpha: 0.05),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildSectionTitle('Latest Evaluation'),
+                _buildRatingStars(result.rating),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '${result.symbol} • ${result.interval} • ${result.leverage}x • ${result.initialCapital.toStringAsFixed(0)} USDT',
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildSimpleMetric('Net Earnings', '${result.netEarnings >= 0 ? '+' : ''}${result.netEarnings.toStringAsFixed(2)}', 
+                    result.netEarnings >= 0 ? Colors.greenAccent : Colors.redAccent),
+                _buildSimpleMetric('Success Rate', '${((result.profitableTrades / (result.totalTrades > 0 ? result.totalTrades : 1)) * 100).toStringAsFixed(1)}%', Colors.white),
+                _buildSimpleMetric('Trades', result.totalTrades.toString(), Colors.white),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSimpleMetric(String label, String value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10)),
+        Text(value, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  Widget _buildRatingStars(int rating) {
+    return Row(
+      children: List.generate(5, (index) {
+        return Icon(
+          index < rating ? Icons.star : Icons.star_border,
+          color: BinanceTheme.yellow,
+          size: 16,
+        );
+      }),
     );
   }
 
@@ -516,7 +578,12 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                                 shortExit: StrategyPhase(conditions: _shortExitConditions),
                               );
                               final capital = double.tryParse(capitalController.text) ?? 1000.0;
-                              evalViewModel.evaluate(strategy, selectedSymbol, selectedInterval, capital, selectedLeverage);
+                              evalViewModel.evaluate(strategy, selectedSymbol, selectedInterval, capital, selectedLeverage).then((_) {
+                                if (context.mounted && evalViewModel.lastResult != null && evalViewModel.error == null) {
+                                  final updatedStrategy = strategy.copyWith(lastResult: evalViewModel.lastResult);
+                                  Provider.of<StrategyViewModel>(context, listen: false).updateStrategy(updatedStrategy);
+                                }
+                              });
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: BinanceTheme.yellow,

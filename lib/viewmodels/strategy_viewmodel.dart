@@ -15,6 +15,10 @@ class StrategyViewModel extends ChangeNotifier {
     _loadStrategies();
   }
 
+  Future<void> refresh() async {
+    await _loadStrategies();
+  }
+
   Future<void> _loadStrategies() async {
     _isLoading = true;
     notifyListeners();

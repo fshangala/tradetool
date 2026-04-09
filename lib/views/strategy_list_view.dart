@@ -82,6 +82,21 @@ class StrategyListView extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
+          const Spacer(),
+          Consumer<StrategyViewModel>(
+            builder: (context, viewModel, child) {
+              return IconButton(
+                icon: viewModel.isLoading 
+                  ? const SizedBox(
+                      width: 20, 
+                      height: 20, 
+                      child: CircularProgressIndicator(color: BinanceTheme.yellow, strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh, color: BinanceTheme.yellow),
+                onPressed: viewModel.isLoading ? null : () => viewModel.refresh(),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -113,12 +128,35 @@ class StrategyListView extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    strategy.name,
-                    style: const TextStyle(
-                      color: BinanceTheme.yellow,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          strategy.name,
+                          style: const TextStyle(
+                            color: BinanceTheme.yellow,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (strategy.lastResult != null)
+                          Row(
+                            children: [
+                              _buildRatingStars(strategy.lastResult!.rating),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Success: ${((strategy.lastResult!.profitableTrades / (strategy.lastResult!.totalTrades > 0 ? strategy.lastResult!.totalTrades : 1)) * 100).toStringAsFixed(1)}%',
+                                style: const TextStyle(color: Colors.white54, fontSize: 10),
+                              ),
+                            ],
+                          )
+                        else
+                          const Text(
+                            'No evaluation yet',
+                            style: TextStyle(color: Colors.white24, fontSize: 10, fontStyle: FontStyle.italic),
+                          ),
+                      ],
                     ),
                   ),
                   IconButton(
@@ -191,6 +229,18 @@ class StrategyListView extends StatelessWidget {
       case Operator.crossesAbove: return '↑';
       case Operator.crossesBelow: return '↓';
     }
+  }
+
+  Widget _buildRatingStars(int rating) {
+    return Row(
+      children: List.generate(5, (index) {
+        return Icon(
+          index < rating ? Icons.star : Icons.star_border,
+          color: BinanceTheme.yellow,
+          size: 12,
+        );
+      }),
+    );
   }
 
   void _confirmDelete(BuildContext context, Strategy strategy, StrategyViewModel viewModel) {
