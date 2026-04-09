@@ -16,6 +16,7 @@ class Condition {
   final double value;
   final ConditionType targetType;
   final String? targetIndicatorName;
+  final bool useLastClosedData;
 
   Condition({
     required this.type,
@@ -25,6 +26,7 @@ class Condition {
     required this.value,
     this.targetType = ConditionType.price,
     this.targetIndicatorName,
+    this.useLastClosedData = false,
   });
 
   factory Condition.fromJson(Map<String, dynamic> json) {
@@ -38,6 +40,7 @@ class Condition {
           ? ConditionType.values.firstWhere((e) => e.name == json['targetType'])
           : ConditionType.price,
       targetIndicatorName: json['targetIndicatorName'],
+      useLastClosedData: json['useLastClosedData'] ?? false,
     );
   }
 
@@ -50,6 +53,7 @@ class Condition {
       'value': value,
       'targetType': targetType.name,
       'targetIndicatorName': targetIndicatorName,
+      'useLastClosedData': useLastClosedData,
     };
   }
 }

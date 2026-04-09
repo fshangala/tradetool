@@ -52,6 +52,8 @@
     - **Accurate EMA Logic:** Utilizes `EMAIndicator` with `emaValueList` for precise EMA7, EMA25, and EMA99 evaluation.
     - **Dynamic Comparisons:** Support for comparing price or indicators against other indicators (e.g., "Price < DN" or "DIF > DEA").
     - **Customizable Wallet Usage:** Specify 1-80% of available wallet balance for each strategy entry.
+    - **Historical Comparisons:** Added `useLastClosedData` flag to conditions, allowing evaluation using price and indicator values from the last closed candle (regardless of the current candle's live movement).
+    - **RSI Reversion Strategy:** Seeded a default "RSI Reversion" strategy utilizing closed-candle data (Entry: RSI < 30 / > 70, Exit: RSI 50).
 - **Algo Order Support:** Integrated Binance's specialized Algo Order Service (`/fapi/v1/algoOrder`) for automated protection orders.
 - **Dashboard Refinement:** Removed manual trade buttons to focus on automated execution; added a dynamic **Retry** button for failed strategy actions (Entry, Protection, or Exit).
 - **Screen Management:** Integrated `wakelock_plus` to keep the screen on while automated strategies are active.

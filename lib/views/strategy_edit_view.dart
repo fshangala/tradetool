@@ -324,7 +324,8 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     final opStr = _opToSymbol(c.op);
     String leftSide = c.type == ConditionType.price ? 'Price' : c.indicatorName!;
     String rightSide = c.targetIndicatorName ?? c.value.toString();
-    return '$leftSide $opStr $rightSide';
+    String suffix = c.useLastClosedData ? ' [Last]' : '';
+    return '$leftSide $opStr $rightSide$suffix';
   }
 
   String _opToSymbol(Operator op) {
@@ -343,6 +344,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     Operator selectedOp = Operator.lessThan;
     bool isComparingWithIndicator = false;
     String targetIndicator = 'EMA25';
+    bool useLastClosedData = false;
     final valueController = TextEditingController();
 
     showDialog(
@@ -430,6 +432,19 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                       labelStyle: TextStyle(color: Colors.white70),
                     ),
                   ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Text('Use Last Closed Candle', style: TextStyle(color: BinanceTheme.yellow, fontSize: 12)),
+                    const Spacer(),
+                    Switch(
+                      value: useLastClosedData,
+                      activeThumbColor: BinanceTheme.yellow,
+                      activeTrackColor: BinanceTheme.yellow.withValues(alpha: 0.5),
+                      onChanged: (val) => setDialogState(() => useLastClosedData = val),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -455,6 +470,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                     value: value,
                     targetType: isComparingWithIndicator ? ConditionType.indicator : ConditionType.price,
                     targetIndicatorName: isComparingWithIndicator ? targetIndicator : null,
+                    useLastClosedData: useLastClosedData,
                   ));
                 });
                 Navigator.pop(context);

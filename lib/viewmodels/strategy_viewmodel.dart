@@ -43,7 +43,8 @@ class StrategyViewModel extends ChangeNotifier {
   Strategy _createDefaultStrategy() {
     return Strategy(
       id: const Uuid().v4(),
-      name: 'RSI Mean Reversion',
+      name: 'RSI Reversion',
+      walletPercentage: 40.0,
       longEntry: EntrySettings(
         conditions: [
           Condition(
@@ -51,6 +52,7 @@ class StrategyViewModel extends ChangeNotifier {
             indicatorName: 'RSI',
             op: Operator.lessThan,
             value: 30,
+            useLastClosedData: true,
           ),
         ],
         useProtection: true,
@@ -64,6 +66,7 @@ class StrategyViewModel extends ChangeNotifier {
             indicatorName: 'RSI',
             op: Operator.greaterThan,
             value: 70,
+            useLastClosedData: true,
           ),
         ],
         useProtection: true,
@@ -76,6 +79,7 @@ class StrategyViewModel extends ChangeNotifier {
           indicatorName: 'RSI',
           op: Operator.greaterThan,
           value: 50,
+          useLastClosedData: true,
         ),
       ]),
       shortExit: StrategyPhase(conditions: [
@@ -84,6 +88,7 @@ class StrategyViewModel extends ChangeNotifier {
           indicatorName: 'RSI',
           op: Operator.lessThan,
           value: 50,
+          useLastClosedData: true,
         ),
       ]),
     );

@@ -15,6 +15,7 @@ class BinanceService {
   static const String liveBaseUrl = 'https://fapi.binance.com';
   static const String testnetBaseUrl = 'https://demo-fapi.binance.com';
   static const String wsUrl = 'wss://fstream.binancefuture.com/ws';
+  static const int recvWindow = 30000;
 
   final bool isTestnet;
   final String? apiKey;
@@ -48,7 +49,7 @@ class BinanceService {
     }
 
     final int timestamp = DateTime.now().millisecondsSinceEpoch;
-    final String queryString = 'timestamp=$timestamp&recvWindow=60000';
+    final String queryString = 'timestamp=$timestamp&recvWindow=$recvWindow';
     final String signature = _generateSignature(queryString);
 
     final response = await http.get(
@@ -74,7 +75,7 @@ class BinanceService {
     }
 
     final int timestamp = DateTime.now().millisecondsSinceEpoch;
-    final String queryString = 'timestamp=$timestamp&recvWindow=60000';
+    final String queryString = 'timestamp=$timestamp&recvWindow=$recvWindow';
     final String signature = _generateSignature(queryString);
 
     final response = await http.get(
@@ -103,7 +104,7 @@ class BinanceService {
     final int timestamp = DateTime.now().millisecondsSinceEpoch;
     final Map<String, String> params = {
       'timestamp': timestamp.toString(),
-      'recvWindow': '60000',
+      'recvWindow': '$recvWindow',
     };
     if (symbol != null) params['symbol'] = symbol.toUpperCase();
 
@@ -161,7 +162,7 @@ class BinanceService {
       'side': side.toUpperCase(),
       'type': type.toUpperCase(),
       'timestamp': timestamp.toString(),
-      'recvWindow': '60000',
+      'recvWindow': '$recvWindow',
     };
 
     if (quantity != null) params['quantity'] = quantity.toString();
@@ -278,7 +279,7 @@ class BinanceService {
     final int timestamp = DateTime.now().millisecondsSinceEpoch;
     final Map<String, String> params = {
       'timestamp': timestamp.toString(),
-      'recvWindow': '60000',
+      'recvWindow': '$recvWindow',
     };
     if (symbol != null) params['symbol'] = symbol.toUpperCase();
 
@@ -341,7 +342,7 @@ class BinanceService {
       'side': side.toUpperCase(),
       'type': type.toUpperCase(),
       'timestamp': timestamp.toString(),
-      'recvWindow': '60000',
+      'recvWindow': '$recvWindow',
     };
 
     if (quantity != null) params['quantity'] = quantity.toString();

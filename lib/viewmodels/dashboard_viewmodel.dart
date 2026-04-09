@@ -348,6 +348,8 @@ class DashboardViewModel extends ChangeNotifier {
     }
   }
 
+  bool _candleClosed = false;
+
   void _connectWebsocket() {
     _wsChannel?.sink.close();
     _wsChannel = _binanceService.establishKlineWebsocket(
@@ -360,6 +362,7 @@ class DashboardViewModel extends ChangeNotifier {
       if (data['e'] == 'kline') {
         final k = data['k'];
         final newEntity = _binanceService.mapWsToKLineEntity(k);
+        _candleClosed = k['x']; // true if the candle is closed otherwise false
 
         if (_datas.isNotEmpty && _datas.last.time == newEntity.time) {
           _datas[_datas.length - 1] = newEntity;
@@ -603,25 +606,35 @@ class DashboardViewModel extends ChangeNotifier {
   bool _evaluateCondition(Condition condition, List<KLineEntity> data) {
     if (data.isEmpty) return false;
 
-    final lastData = data.last;
+    // Determine the data point to use for evaluation
+    final KLineEntity activeData;
+    if (condition.useLastClosedData) {
+      if (_candleClosed) {
+        activeData = data.last;
+      } else {
+        activeData = data.length >= 2 ? data[data.length - 2] : data.last;
+      }
+    } else {
+      activeData = data.last;
+    }
 
     double leftValue;
     if (condition.type == ConditionType.price) {
-      leftValue = lastData.close;
+      leftValue = activeData.close;
     } else {
-      leftValue = _getIndicatorValue(condition.indicatorName!, lastData);
+      leftValue = _getIndicatorValue(condition.indicatorName!, activeData);
     }
 
     double rightValue;
-    if (condition.targetIndicatorName != null) {
-      rightValue = _getIndicatorValue(condition.targetIndicatorName!, lastData);
+    if (condition.targetType == ConditionType.indicator) {
+      rightValue = _getIndicatorValue(condition.targetIndicatorName!, activeData);
     } else {
       rightValue = condition.value;
     }
 
     final met = _checkOperator(condition.op, leftValue, rightValue, condition, data);
     
-    logger.d('Condition: ${condition.type == ConditionType.price ? "Price" : condition.indicatorName} ${condition.op.name} ${condition.targetIndicatorName ?? condition.value} | Left: $leftValue, Right: $rightValue | Result: $met');
+    logger.d('Condition: ${condition.type.name} ${condition.indicatorName ?? ""} ${condition.op.name} ${condition.targetIndicatorName ?? condition.value} (LastClosed: ${condition.useLastClosedData}) | Left: $leftValue, Right: $rightValue | Result: $met');
     
     return met;
   }
