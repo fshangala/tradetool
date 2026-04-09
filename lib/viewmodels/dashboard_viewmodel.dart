@@ -480,11 +480,13 @@ class DashboardViewModel extends ChangeNotifier {
 
       logger.i('Setting protection for $symbol: TP at $tpPrice, SL at $slPrice');
       
+      final symbolInfo = settingsViewModel.getSymbolInfo(symbol);
+
       await _binanceService.placeAlgoOrder(
         symbol: symbol,
         side: isLong ? 'SELL' : 'BUY',
         type: 'TAKE_PROFIT_MARKET',
-        triggerPrice: double.parse(tpPrice.toStringAsFixed(2)),
+        triggerPrice: double.parse(tpPrice.toStringAsFixed(symbolInfo?.pricePrecision ?? 2)),
         closePosition: true,
         workingType: 'MARK_PRICE',
         positionSide: position.positionSide,
@@ -494,7 +496,7 @@ class DashboardViewModel extends ChangeNotifier {
         symbol: symbol,
         side: isLong ? 'SELL' : 'BUY',
         type: 'STOP_MARKET',
-        triggerPrice: double.parse(slPrice.toStringAsFixed(2)),
+        triggerPrice: double.parse(slPrice.toStringAsFixed(symbolInfo?.pricePrecision ?? 2)),
         closePosition: true,
         workingType: 'MARK_PRICE',
         positionSide: position.positionSide,
@@ -722,7 +724,8 @@ class DashboardViewModel extends ChangeNotifier {
     final marginToUse = _availableBalance * percent;
     final quantity = marginToUse / currentPrice;
 
-    final formattedQuantity = double.parse(quantity.toStringAsFixed(3));
+    final symbolInfo = settingsViewModel.getSymbolInfo(_currentSymbol);
+    final formattedQuantity = double.parse(quantity.toStringAsFixed(symbolInfo?.quantityPrecision ?? 3));
 
     if (formattedQuantity <= 0) {
       logger.w('Calculated quantity is too small: $formattedQuantity');

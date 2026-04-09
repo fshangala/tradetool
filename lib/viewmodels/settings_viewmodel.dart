@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/constants.dart';
 import '../services/binance_service.dart';
+import '../models/symbol_model.dart';
+import 'notification_viewmodel.dart';
 
 class SettingsViewModel extends ChangeNotifier {
+  final NotificationViewModel notificationViewModel;
   String _liveApiKey = '';
   String _liveSecretKey = '';
   String _testnetApiKey = '';
   String _testnetSecretKey = '';
   bool _isTestnet = true;
   List<String> _selectedSymbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT'];
-  List<String> _allSymbols = [];
+  List<SymbolModel> _allSymbols = [];
+  Map<String, SymbolModel> _symbolInfoMap = {};
   bool _isSymbolsLoading = false;
 
   String get liveApiKey => _liveApiKey;
@@ -19,12 +23,14 @@ class SettingsViewModel extends ChangeNotifier {
   String get testnetSecretKey => _testnetSecretKey;
   bool get isTestnet => _isTestnet;
   List<String> get selectedSymbols => _selectedSymbols;
-  List<String> get allSymbols => _allSymbols;
+  List<SymbolModel> get allSymbols => _allSymbols;
   bool get isSymbolsLoading => _isSymbolsLoading;
 
-  SettingsViewModel() {
+  SettingsViewModel({required this.notificationViewModel}) {
     _loadSettings();
   }
+
+  SymbolModel? getSymbolInfo(String symbol) => _symbolInfoMap[symbol];
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -34,6 +40,10 @@ class SettingsViewModel extends ChangeNotifier {
     _testnetSecretKey = prefs.getString(AppConstants.keyTestnetSecretKey) ?? '';
     _isTestnet = prefs.getBool(AppConstants.keyIsTestnet) ?? true;
     _selectedSymbols = prefs.getStringList('custom_symbols') ?? ['BTCUSDT', 'ETHUSDT', 'BNBUSDT'];
+    
+    // Initial fetch to populate map for default symbols
+    await fetchAllAvailableSymbols();
+    
     notifyListeners();
   }
 
@@ -43,8 +53,10 @@ class SettingsViewModel extends ChangeNotifier {
     try {
       final service = BinanceService(isTestnet: _isTestnet);
       _allSymbols = await service.fetchExchangeInfo();
+      _symbolInfoMap = {for (var s in _allSymbols) s.symbol: s};
     } catch (e) {
       debugPrint('Error fetching symbols: $e');
+      notificationViewModel.error('Failed to fetch symbols: $e');
     } finally {
       _isSymbolsLoading = false;
       notifyListeners();

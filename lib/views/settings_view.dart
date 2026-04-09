@@ -248,75 +248,99 @@ class _SettingsViewState extends State<SettingsView> {
 
   void _showAddSymbolDialog(BuildContext context, SettingsViewModel viewModel) {
     viewModel.fetchAllAvailableSymbols();
+    String searchQuery = '';
+    
     showDialog(
       context: context,
       builder: (context) {
-        return ListenableBuilder(
-          listenable: viewModel,
-          builder: (context, _) {
-            return AlertDialog(
-              backgroundColor: BinanceTheme.surfaceColor,
-              title: const Text(
-                'Add Trading Pair',
-                style: TextStyle(color: Colors.white),
-              ),
-              content: SizedBox(
-                width: double.maxFinite,
-                height: 400,
-                child: viewModel.isSymbolsLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: BinanceTheme.yellow,
-                        ),
-                      )
-                    : Column(
-                        children: [
-                          Expanded(
-                            child: ListView.builder(
-                              itemCount: viewModel.allSymbols.length,
-                              itemBuilder: (context, index) {
-                                final symbol = viewModel.allSymbols[index];
-                                final isSelected =
-                                    viewModel.selectedSymbols.contains(symbol);
-                                return ListTile(
-                                  title: Text(
-                                    symbol,
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                  trailing: isSelected
-                                      ? const Icon(
-                                          Icons.check_circle,
-                                          color: BinanceTheme.yellow,
-                                        )
-                                      : const Icon(
-                                          Icons.add_circle_outline,
-                                          color: Colors.grey,
-                                        ),
-                                  onTap: () {
-                                    if (isSelected) {
-                                      viewModel.removeSymbol(symbol);
-                                    } else {
-                                      viewModel.addSymbol(symbol);
-                                    }
-                                  },
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'Done',
-                    style: TextStyle(color: BinanceTheme.yellow),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return ListenableBuilder(
+              listenable: viewModel,
+              builder: (context, _) {
+                final filteredSymbols = viewModel.allSymbols
+                    .where((s) => s.symbol.contains(searchQuery.toUpperCase()))
+                    .toList();
+                    
+                return AlertDialog(
+                  backgroundColor: BinanceTheme.surfaceColor,
+                  title: const Text(
+                    'Add Trading Pair',
+                    style: TextStyle(color: Colors.white),
                   ),
-                ),
-              ],
+                  content: SizedBox(
+                    width: double.maxFinite,
+                    height: 400,
+                    child: viewModel.isSymbolsLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: BinanceTheme.yellow,
+                            ),
+                          )
+                        : Column(
+                            children: [
+                              TextField(
+                                onChanged: (value) => setDialogState(() => searchQuery = value),
+                                style: const TextStyle(color: Colors.white),
+                                decoration: const InputDecoration(
+                                  hintText: 'Search symbols (e.g. BTC)',
+                                  prefixIcon: Icon(Icons.search, color: Colors.grey),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Expanded(
+                                child: ListView.builder(
+                                  itemCount: filteredSymbols.length,
+                                  itemBuilder: (context, index) {
+                                    final symbolModel = filteredSymbols[index];
+                                    final symbol = symbolModel.symbol;
+                                    final isSelected =
+                                        viewModel.selectedSymbols.contains(symbol);
+                                    return ListTile(
+                                      title: Text(
+                                        symbol,
+                                        style: const TextStyle(color: Colors.white),
+                                      ),
+                                      subtitle: Text(
+                                        'Prec: Q:${symbolModel.quantityPrecision} P:${symbolModel.pricePrecision}',
+                                        style: const TextStyle(color: Colors.grey, fontSize: 10),
+                                      ),
+                                      trailing: isSelected
+                                          ? const Icon(
+                                              Icons.check_circle,
+                                              color: BinanceTheme.yellow,
+                                            )
+                                          : const Icon(
+                                              Icons.add_circle_outline,
+                                              color: Colors.grey,
+                                            ),
+                                      onTap: () {
+                                        if (isSelected) {
+                                          viewModel.removeSymbol(symbol);
+                                        } else {
+                                          viewModel.addSymbol(symbol);
+                                        }
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'Done',
+                        style: TextStyle(color: BinanceTheme.yellow),
+                      ),
+                    ),
+                  ],
+                );
+              }
             );
-          },
+          }
         );
       },
     );

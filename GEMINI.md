@@ -52,6 +52,9 @@
     - **Accurate EMA Logic:** Utilizes `EMAIndicator` with `emaValueList` for precise EMA7, EMA25, and EMA99 evaluation.
     - **Dynamic Comparisons:** Support for comparing price or indicators against other indicators (e.g., "Price < DN" or "DIF > DEA").
     - **Customizable Wallet Usage:** Specify 1-80% of available wallet balance for each strategy entry.
+    - **Symbol Metadata & Precision:** Implemented `SymbolModel` to store exchange-provided `quantityPrecision` and `pricePrecision`.
+    - **Dynamic Precision Handling:** Orders (Market and Protection) now dynamically use the correct precision for quantities and trigger prices based on the trading pair's metadata, replacing hardcoded defaults.
+    - **Enhanced Pair Management:** Improved symbol selection UI with search filtering and precision information visibility.
     - **Historical Comparisons:** Added `useLastClosedData` flag to conditions, allowing evaluation using price and indicator values from the last closed candle (regardless of the current candle's live movement).
     - **RSI Reversion Strategy:** Seeded a default "RSI Reversion" strategy utilizing closed-candle data (Entry: RSI < 30 / > 70, Exit: RSI 50).
 - **Algo Order Support:** Integrated Binance's specialized Algo Order Service (`/fapi/v1/algoOrder`) for automated protection orders.

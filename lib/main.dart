@@ -23,8 +23,17 @@ class BinanceTradeApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => SettingsViewModel()),
         ChangeNotifierProvider(create: (_) => NotificationViewModel()),
+        ChangeNotifierProxyProvider<NotificationViewModel, SettingsViewModel>(
+          create: (context) => SettingsViewModel(
+            notificationViewModel: context.read<NotificationViewModel>(),
+          ),
+          update: (context, notification, previous) =>
+              previous ??
+              SettingsViewModel(
+                notificationViewModel: notification,
+              ),
+        ),
         ChangeNotifierProvider(create: (_) => StrategyViewModel()),
         ChangeNotifierProxyProvider3<SettingsViewModel, NotificationViewModel, StrategyViewModel, DashboardViewModel>(
           create: (context) => DashboardViewModel(

@@ -9,6 +9,7 @@ import '../models/account_config.dart';
 import '../models/position_risk.dart';
 import '../models/order_response.dart';
 import '../models/algo_order_response.dart';
+import '../models/symbol_model.dart';
 
 /// Service class to interact with the Binance Futures API.
 class BinanceService {
@@ -194,7 +195,7 @@ class BinanceService {
   /// Fetches a list of available trading symbols from the exchange.
   ///
   /// Filters for symbols that are TRADING, PERPETUAL, and end with USDT.
-  Future<List<String>> fetchExchangeInfo() async {
+  Future<List<SymbolModel>> fetchExchangeInfo() async {
     final response = await http.get(Uri.parse('$baseUrl/fapi/v1/exchangeInfo'));
 
     if (response.statusCode == 200) {
@@ -203,7 +204,7 @@ class BinanceService {
       
       return symbols
           .where((s) => s['status'] == 'TRADING' && s['contractType'] == 'PERPETUAL' && s['symbol'].toString().endsWith('USDT'))
-          .map((s) => s['symbol'].toString())
+          .map((s) => SymbolModel.fromJson(s))
           .toList();
     } else {
       throw Exception('Failed to load exchange info: ${response.body}');
