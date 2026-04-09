@@ -18,12 +18,12 @@ class PositionIndicator extends MainIndicator<KLineEntity, MAStyle> {
   final List<double> entryPrices;
 
   PositionIndicator({required this.entryPrices})
-      : super(
-          name: 'POS',
-          shortName: 'POS',
-          indicatorStyle: const MAStyle(),
-          calcParams: [],
-        );
+    : super(
+        name: 'POS',
+        shortName: 'POS',
+        indicatorStyle: const MAStyle(),
+        calcParams: [],
+      );
 
   @override
   void calc(List<KLineEntity> data) {}
@@ -77,20 +77,23 @@ class DashboardViewModel extends ChangeNotifier {
 
   // Strategy Execution State
   final Map<String, String?> _activeStrategyIds = {}; // symbol -> strategyId
-  final Map<String, String> _activeStrategyPhases = {}; // symbol -> phase (entry, exit)
-  final Map<String, String?> _failedActions = {}; // symbol -> failedActionName ('entry', 'protection', 'exit')
+  final Map<String, String> _activeStrategyPhases =
+      {}; // symbol -> phase (entry, exit)
+  final Map<String, String?> _failedActions =
+      {}; // symbol -> failedActionName ('entry', 'protection', 'exit')
   final Map<String, bool> _workingSymbols = {}; // symbol -> working
-  
+
   String? getActiveStrategyId(String symbol) => _activeStrategyIds[symbol];
-  String getActiveStrategyPhase(String symbol) => _activeStrategyPhases[symbol] ?? 'none';
+  String getActiveStrategyPhase(String symbol) =>
+      _activeStrategyPhases[symbol] ?? 'none';
   String? getFailedAction(String symbol) => _failedActions[symbol];
   bool isWorking(String symbol) => _workingSymbols[symbol] ?? false;
 
   void setStrategyForSymbol(String symbol, String? strategyId) {
-    if (isSymbolLocked(symbol)) return;
     _activeStrategyIds[symbol] = strategyId;
     if (strategyId != null) {
-      _activeStrategyPhases[symbol] = 'entry';
+      final hasPosition = _positions.any((p) => p.symbol == symbol);
+      _activeStrategyPhases[symbol] = hasPosition ? 'exit' : 'entry';
     } else {
       _activeStrategyPhases.remove(symbol);
       _workingSymbols.remove(symbol);
@@ -225,10 +228,10 @@ class DashboardViewModel extends ChangeNotifier {
         _binanceService.fetchAccountInformation(),
         _binanceService.fetchAccountConfig(),
       ]);
-      
+
       _accountInfo = results[0] as AccountInformation;
       _accountConfig = results[1] as AccountConfig;
-      
+
       _availableBalance = _accountInfo?.availableBalance ?? 0.0;
     } catch (e) {
       logger.e('Error fetching account info: $e');
@@ -267,7 +270,9 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   void _updateChartIndicators() {
-    final symbolPositions = _positions.where((p) => p.symbol == _currentSymbol).toList();
+    final symbolPositions = _positions
+        .where((p) => p.symbol == _currentSymbol)
+        .toList();
     final entryPrices = symbolPositions
         .map((p) => p.entryPrice)
         .where((price) => price > 0)
@@ -281,10 +286,14 @@ class DashboardViewModel extends ChangeNotifier {
     if (entryPrices.isNotEmpty) {
       _mainIndicators.add(PositionIndicator(entryPrices: entryPrices));
     }
-    
+
     // Re-calculate indicators since _mainIndicators has changed
     if (_datas.isNotEmpty) {
-      DataUtil.calculateIndicators(_datas, _mainIndicators, _secondaryIndicators);
+      DataUtil.calculateIndicators(
+        _datas,
+        _mainIndicators,
+        _secondaryIndicators,
+      );
     }
     notifyListeners();
   }
@@ -316,11 +325,8 @@ class DashboardViewModel extends ChangeNotifier {
 
       logger.i('Position closed successfully: ${response.orderId}');
       notificationViewModel.success('Position closed for $symbol');
-      
-      await Future.wait([
-        _fetchPositions(),
-        _fetchAccountInfo(),
-      ]);
+
+      await Future.wait([_fetchPositions(), _fetchAccountInfo()]);
     } catch (e) {
       logger.e('Error closing position: $e');
       notificationViewModel.error('Failed to close position: $e');
@@ -376,7 +382,9 @@ class DashboardViewModel extends ChangeNotifier {
         );
 
         _runStrategyEvaluation(_currentSymbol);
-        logger.d('WebSocket update for $_currentSymbol: price=${newEntity.close}');
+        logger.d(
+          'WebSocket update for $_currentSymbol: price=${newEntity.close}',
+        );
 
         notifyListeners();
       }
@@ -396,7 +404,9 @@ class DashboardViewModel extends ChangeNotifier {
     }
 
     final phase = _activeStrategyPhases[symbol] ?? 'entry';
-    logger.d('Evaluating strategy ${strategy.name} for $symbol (Phase: $phase)');
+    logger.d(
+      'Evaluating strategy ${strategy.name} for $symbol (Phase: $phase)',
+    );
 
     if (phase == 'entry') {
       _processEntryPhase(symbol, strategy);
@@ -426,7 +436,12 @@ class DashboardViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> _executeEntry(String symbol, Strategy strategy, String side, EntrySettings entry) async {
+  Future<void> _executeEntry(
+    String symbol,
+    Strategy strategy,
+    String side,
+    EntrySettings entry,
+  ) async {
     logger.i('$side entry conditions met for $symbol using ${strategy.name}');
     try {
       _workingSymbols[symbol] = true;
@@ -434,9 +449,13 @@ class DashboardViewModel extends ChangeNotifier {
 
       await placeMarketOrder(side, percent: strategy.walletPercentage / 100);
       _activeStrategyPhases[symbol] = 'exit';
-      
+
       if (entry.useProtection) {
-        await _placeProtectionOrdersForSymbol(symbol, entry.takeProfit, entry.stopLoss);
+        await _placeProtectionOrdersForSymbol(
+          symbol,
+          entry.takeProfit,
+          entry.stopLoss,
+        );
       }
       notifyListeners();
     } catch (e) {
@@ -449,9 +468,13 @@ class DashboardViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> _placeProtectionOrdersForSymbol(String symbol, double tpPercent, double slPercent) async {
+  Future<void> _placeProtectionOrdersForSymbol(
+    String symbol,
+    double tpPercent,
+    double slPercent,
+  ) async {
     PositionRisk? position;
-    
+
     try {
       _workingSymbols[symbol] = true;
       notifyListeners();
@@ -475,18 +498,26 @@ class DashboardViewModel extends ChangeNotifier {
       if (entryPrice <= 0) return;
 
       final isLong = position.positionAmt > 0;
-      final tpPrice = isLong ? entryPrice * (1 + tpPercent / 100) : entryPrice * (1 - tpPercent / 100);
-      final slPrice = isLong ? entryPrice * (1 - slPercent / 100) : entryPrice * (1 + slPercent / 100);
+      final tpPrice = isLong
+          ? entryPrice * (1 + tpPercent / 100)
+          : entryPrice * (1 - tpPercent / 100);
+      final slPrice = isLong
+          ? entryPrice * (1 - slPercent / 100)
+          : entryPrice * (1 + slPercent / 100);
 
-      logger.i('Setting protection for $symbol: TP at $tpPrice, SL at $slPrice');
-      
+      logger.i(
+        'Setting protection for $symbol: TP at $tpPrice, SL at $slPrice',
+      );
+
       final symbolInfo = settingsViewModel.getSymbolInfo(symbol);
 
       await _binanceService.placeAlgoOrder(
         symbol: symbol,
         side: isLong ? 'SELL' : 'BUY',
         type: 'TAKE_PROFIT_MARKET',
-        triggerPrice: double.parse(tpPrice.toStringAsFixed(symbolInfo?.pricePrecision ?? 2)),
+        triggerPrice: double.parse(
+          tpPrice.toStringAsFixed(symbolInfo?.pricePrecision ?? 2),
+        ),
         closePosition: true,
         workingType: 'MARK_PRICE',
         positionSide: position.positionSide,
@@ -496,7 +527,9 @@ class DashboardViewModel extends ChangeNotifier {
         symbol: symbol,
         side: isLong ? 'SELL' : 'BUY',
         type: 'STOP_MARKET',
-        triggerPrice: double.parse(slPrice.toStringAsFixed(symbolInfo?.pricePrecision ?? 2)),
+        triggerPrice: double.parse(
+          slPrice.toStringAsFixed(symbolInfo?.pricePrecision ?? 2),
+        ),
         closePosition: true,
         workingType: 'MARK_PRICE',
         positionSide: position.positionSide,
@@ -517,28 +550,29 @@ class DashboardViewModel extends ChangeNotifier {
   Future<void> _processExitPhase(String symbol, Strategy strategy) async {
     final position = _positions.firstWhereOrNull((p) => p.symbol == symbol);
     if (position == null) {
-      _activeStrategyIds.remove(symbol);
-      _activeStrategyPhases.remove(symbol);
+      // Position was closed elsewhere (e.g. manually)
+      _activeStrategyPhases[symbol] = 'entry';
       _failedActions.remove(symbol);
-      _updateWakelock();
       notifyListeners();
       return;
     }
 
     final isLong = position.positionAmt > 0;
-    final exitConditions = isLong ? strategy.longExit.conditions : strategy.shortExit.conditions;
+    final exitConditions = isLong
+        ? strategy.longExit.conditions
+        : strategy.shortExit.conditions;
 
     if (_evaluatePhase(exitConditions, _datas)) {
-      logger.i('${isLong ? "Long" : "Short"} exit conditions met for $symbol using ${strategy.name}');
+      logger.i(
+        '${isLong ? "Long" : "Short"} exit conditions met for $symbol using ${strategy.name}',
+      );
       try {
         _workingSymbols[symbol] = true;
         notifyListeners();
 
         await closePosition(position);
-        _activeStrategyIds.remove(symbol);
-        _activeStrategyPhases.remove(symbol);
+        _activeStrategyPhases[symbol] = 'entry';
         _failedActions.remove(symbol);
-        _updateWakelock();
         notifyListeners();
       } catch (e) {
         logger.e('Exit execution failed: $e');
@@ -575,9 +609,17 @@ class DashboardViewModel extends ChangeNotifier {
         if (position != null) {
           final isLong = position.positionAmt > 0;
           final entry = isLong ? strategy.longEntry : strategy.shortEntry;
-          await _placeProtectionOrdersForSymbol(symbol, entry.takeProfit, entry.stopLoss);
+          await _placeProtectionOrdersForSymbol(
+            symbol,
+            entry.takeProfit,
+            entry.stopLoss,
+          );
         } else {
-          await _placeProtectionOrdersForSymbol(symbol, strategy.longEntry.takeProfit, strategy.longEntry.stopLoss);
+          await _placeProtectionOrdersForSymbol(
+            symbol,
+            strategy.longEntry.takeProfit,
+            strategy.longEntry.stopLoss,
+          );
         }
       } else if (failedAction == 'exit') {
         final position = _positions.firstWhereOrNull((p) => p.symbol == symbol);
@@ -629,19 +671,36 @@ class DashboardViewModel extends ChangeNotifier {
 
     double rightValue;
     if (condition.targetType == ConditionType.indicator) {
-      rightValue = _getIndicatorValue(condition.targetIndicatorName!, activeData);
+      rightValue = _getIndicatorValue(
+        condition.targetIndicatorName!,
+        activeData,
+      );
     } else {
       rightValue = condition.value;
     }
 
-    final met = _checkOperator(condition.op, leftValue, rightValue, condition, data);
-    
-    logger.d('Condition: ${condition.type.name} ${condition.indicatorName ?? ""} ${condition.op.name} ${condition.targetIndicatorName ?? condition.value} (LastClosed: ${condition.useLastClosedData}) | Left: $leftValue, Right: $rightValue | Result: $met');
-    
+    final met = _checkOperator(
+      condition.op,
+      leftValue,
+      rightValue,
+      condition,
+      data,
+    );
+
+    logger.d(
+      'Condition: ${condition.type.name} ${condition.indicatorName ?? ""} ${condition.op.name} ${condition.targetIndicatorName ?? condition.value} (LastClosed: ${condition.useLastClosedData}) | Left: $leftValue, Right: $rightValue | Result: $met',
+    );
+
     return met;
   }
 
-  bool _checkOperator(Operator op, double left, double right, Condition condition, List<KLineEntity> data) {
+  bool _checkOperator(
+    Operator op,
+    double left,
+    double right,
+    Condition condition,
+    List<KLineEntity> data,
+  ) {
     switch (op) {
       case Operator.greaterThan:
         return left > right;
@@ -652,8 +711,8 @@ class DashboardViewModel extends ChangeNotifier {
       case Operator.crossesAbove:
         if (data.length < 2) return false;
         final prevData = data[data.length - 2];
-        final prevLeft = condition.type == ConditionType.price 
-            ? prevData.close 
+        final prevLeft = condition.type == ConditionType.price
+            ? prevData.close
             : _getIndicatorValue(condition.indicatorName!, prevData);
         final prevRight = condition.targetIndicatorName != null
             ? _getIndicatorValue(condition.targetIndicatorName!, prevData)
@@ -662,8 +721,8 @@ class DashboardViewModel extends ChangeNotifier {
       case Operator.crossesBelow:
         if (data.length < 2) return false;
         final prevData = data[data.length - 2];
-        final prevLeft = condition.type == ConditionType.price 
-            ? prevData.close 
+        final prevLeft = condition.type == ConditionType.price
+            ? prevData.close
             : _getIndicatorValue(condition.indicatorName!, prevData);
         final prevRight = condition.targetIndicatorName != null
             ? _getIndicatorValue(condition.targetIndicatorName!, prevData)
@@ -677,15 +736,24 @@ class DashboardViewModel extends ChangeNotifier {
       case 'RSI':
         return entity.rsi ?? 50.0;
       case 'EMA7':
-        final val = entity.emaValueList != null && entity.emaValueList!.isNotEmpty ? entity.emaValueList![0] : null;
+        final val =
+            entity.emaValueList != null && entity.emaValueList!.isNotEmpty
+            ? entity.emaValueList![0]
+            : null;
         if (val == null || val == 0) return entity.close;
         return val;
       case 'EMA25':
-        final val = entity.emaValueList != null && entity.emaValueList!.length > 1 ? entity.emaValueList![1] : null;
+        final val =
+            entity.emaValueList != null && entity.emaValueList!.length > 1
+            ? entity.emaValueList![1]
+            : null;
         if (val == null || val == 0) return entity.close;
         return val;
       case 'EMA99':
-        final val = entity.emaValueList != null && entity.emaValueList!.length > 2 ? entity.emaValueList![2] : null;
+        final val =
+            entity.emaValueList != null && entity.emaValueList!.length > 2
+            ? entity.emaValueList![2]
+            : null;
         if (val == null || val == 0) return entity.close;
         return val;
       case 'UP':
@@ -725,7 +793,9 @@ class DashboardViewModel extends ChangeNotifier {
     final quantity = marginToUse / currentPrice;
 
     final symbolInfo = settingsViewModel.getSymbolInfo(_currentSymbol);
-    final formattedQuantity = double.parse(quantity.toStringAsFixed(symbolInfo?.quantityPrecision ?? 3));
+    final formattedQuantity = double.parse(
+      quantity.toStringAsFixed(symbolInfo?.quantityPrecision ?? 3),
+    );
 
     if (formattedQuantity <= 0) {
       logger.w('Calculated quantity is too small: $formattedQuantity');

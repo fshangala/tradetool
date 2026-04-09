@@ -1,12 +1,6 @@
 enum ConditionType { price, indicator }
 
-enum Operator {
-  greaterThan,
-  lessThan,
-  equal,
-  crossesAbove,
-  crossesBelow,
-}
+enum Operator { greaterThan, lessThan, equal, crossesAbove, crossesBelow }
 
 class Condition {
   final ConditionType type;
@@ -62,10 +56,7 @@ class StrategyPhase {
   final List<Condition> conditions;
   final String logicOperator;
 
-  StrategyPhase({
-    required this.conditions,
-    this.logicOperator = 'AND',
-  });
+  StrategyPhase({required this.conditions, this.logicOperator = 'AND'});
 
   factory StrategyPhase.fromJson(Map<String, dynamic> json) {
     return StrategyPhase(
@@ -212,8 +203,8 @@ class Strategy {
       shortEntry: EntrySettings.fromJson(json['shortEntry']),
       longExit: StrategyPhase.fromJson(json['longExit']),
       shortExit: StrategyPhase.fromJson(json['shortExit']),
-      lastResult: json['lastResult'] != null 
-          ? EvaluationResult.fromJson(json['lastResult']) 
+      lastResult: json['lastResult'] != null
+          ? EvaluationResult.fromJson(json['lastResult'])
           : null,
     );
   }

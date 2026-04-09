@@ -25,8 +25,10 @@ class StrategyViewModel extends ChangeNotifier {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final List<String>? strategiesJson = prefs.getStringList('trading_strategies');
-      
+      final List<String>? strategiesJson = prefs.getStringList(
+        'trading_strategies',
+      );
+
       if (strategiesJson != null) {
         _strategies = strategiesJson
             .map((s) => Strategy.fromJson(jsonDecode(s)))
@@ -77,24 +79,28 @@ class StrategyViewModel extends ChangeNotifier {
         takeProfit: 2.0,
         stopLoss: 1.0,
       ),
-      longExit: StrategyPhase(conditions: [
-        Condition(
-          type: ConditionType.indicator,
-          indicatorName: 'RSI',
-          op: Operator.greaterThan,
-          value: 50,
-          useLastClosedData: true,
-        ),
-      ]),
-      shortExit: StrategyPhase(conditions: [
-        Condition(
-          type: ConditionType.indicator,
-          indicatorName: 'RSI',
-          op: Operator.lessThan,
-          value: 50,
-          useLastClosedData: true,
-        ),
-      ]),
+      longExit: StrategyPhase(
+        conditions: [
+          Condition(
+            type: ConditionType.indicator,
+            indicatorName: 'RSI',
+            op: Operator.greaterThan,
+            value: 50,
+            useLastClosedData: true,
+          ),
+        ],
+      ),
+      shortExit: StrategyPhase(
+        conditions: [
+          Condition(
+            type: ConditionType.indicator,
+            indicatorName: 'RSI',
+            op: Operator.lessThan,
+            value: 50,
+            useLastClosedData: true,
+          ),
+        ],
+      ),
     );
   }
 

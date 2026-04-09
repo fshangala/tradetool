@@ -37,17 +37,25 @@ class PositionRisk {
     return PositionRisk(
       entryPrice: double.tryParse(json['entryPrice']?.toString() ?? '0') ?? 0.0,
       marginType: json['marginType']?.toString() ?? '',
-      isAutoAddMargin: (json['isAutoAddMargin']?.toString() ?? 'false').toLowerCase() == 'true',
-      isolatedMargin: double.tryParse(json['isolatedMargin']?.toString() ?? '0') ?? 0.0,
+      isAutoAddMargin:
+          (json['isAutoAddMargin']?.toString() ?? 'false').toLowerCase() ==
+          'true',
+      isolatedMargin:
+          double.tryParse(json['isolatedMargin']?.toString() ?? '0') ?? 0.0,
       leverage: int.tryParse(json['leverage']?.toString() ?? '0') ?? 0,
-      liquidationPrice: double.tryParse(json['liquidationPrice']?.toString() ?? '0') ?? 0.0,
+      liquidationPrice:
+          double.tryParse(json['liquidationPrice']?.toString() ?? '0') ?? 0.0,
       markPrice: double.tryParse(json['markPrice']?.toString() ?? '0') ?? 0.0,
-      maxNotionalValue: double.tryParse(json['maxNotionalValue']?.toString() ?? '0') ?? 0.0,
-      positionAmt: double.tryParse(json['positionAmt']?.toString() ?? '0') ?? 0.0,
+      maxNotionalValue:
+          double.tryParse(json['maxNotionalValue']?.toString() ?? '0') ?? 0.0,
+      positionAmt:
+          double.tryParse(json['positionAmt']?.toString() ?? '0') ?? 0.0,
       notional: double.tryParse(json['notional']?.toString() ?? '0') ?? 0.0,
-      isolatedWallet: double.tryParse(json['isolatedWallet']?.toString() ?? '0') ?? 0.0,
+      isolatedWallet:
+          double.tryParse(json['isolatedWallet']?.toString() ?? '0') ?? 0.0,
       symbol: json['symbol']?.toString() ?? '',
-      unRealizedProfit: double.tryParse(json['unRealizedProfit']?.toString() ?? '0') ?? 0.0,
+      unRealizedProfit:
+          double.tryParse(json['unRealizedProfit']?.toString() ?? '0') ?? 0.0,
       positionSide: json['positionSide']?.toString() ?? 'BOTH',
       updateTime: int.tryParse(json['updateTime']?.toString() ?? '0') ?? 0,
     );

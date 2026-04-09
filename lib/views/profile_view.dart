@@ -122,8 +122,12 @@ class ProfileView extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryRow(String label, String value,
-      {bool isBold = false, Color? valueColor}) {
+  Widget _buildSummaryRow(
+    String label,
+    String value, {
+    bool isBold = false,
+    Color? valueColor,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -163,16 +167,14 @@ class ProfileView extends StatelessWidget {
         .toList();
 
     if (filteredAssets.isEmpty) {
-      return const Center(
-        child: Text('No assets with balance found'),
-      );
+      return const Center(child: Text('No assets with balance found'));
     }
 
     return Column(
       children: filteredAssets.map((asset) {
         final walletBalance = asset.walletBalance;
         final marginBalance = asset.marginBalance;
-        
+
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
@@ -207,7 +209,10 @@ class ProfileView extends StatelessWidget {
     );
   }
 
-  Widget _buildAccountFlags(AccountInformation accountInfo, AccountConfig? accountConfig) {
+  Widget _buildAccountFlags(
+    AccountInformation accountInfo,
+    AccountConfig? accountConfig,
+  ) {
     final flags = {
       'Can Deposit': accountInfo.canDeposit,
       'Can Trade': accountInfo.canTrade,
@@ -218,7 +223,9 @@ class ProfileView extends StatelessWidget {
 
     final otherConfigs = {
       'Fee Tier': accountInfo.feeTier.toString(),
-      'Update Time': DateTime.fromMillisecondsSinceEpoch(accountInfo.updateTime).toString().split('.').first,
+      'Update Time': DateTime.fromMillisecondsSinceEpoch(
+        accountInfo.updateTime,
+      ).toString().split('.').first,
     };
 
     return Column(

@@ -24,7 +24,7 @@ class NotificationViewModel extends ChangeNotifier {
   void show(String message, {NotificationType type = NotificationType.info}) {
     final id = DateTime.now().millisecondsSinceEpoch.toString();
     final item = NotificationItem(id: id, message: message, type: type);
-    
+
     _notifications.add(item);
     notifyListeners();
 

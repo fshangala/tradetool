@@ -46,7 +46,8 @@ class OrderResponse {
       clientOrderId: json['clientOrderId']?.toString() ?? '',
       price: double.tryParse(json['price']?.toString() ?? '0') ?? 0.0,
       origQty: double.tryParse(json['origQty']?.toString() ?? '0') ?? 0.0,
-      executedQty: double.tryParse(json['executedQty']?.toString() ?? '0') ?? 0.0,
+      executedQty:
+          double.tryParse(json['executedQty']?.toString() ?? '0') ?? 0.0,
       cumQuote: double.tryParse(json['cumQuote']?.toString() ?? '0') ?? 0.0,
       status: json['status']?.toString() ?? '',
       timeInForce: json['timeInForce']?.toString() ?? '',

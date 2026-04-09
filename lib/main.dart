@@ -32,12 +32,15 @@ class BinanceTradeApp extends StatelessWidget {
           ),
           update: (context, notification, previous) =>
               previous ??
-              SettingsViewModel(
-                notificationViewModel: notification,
-              ),
+              SettingsViewModel(notificationViewModel: notification),
         ),
         ChangeNotifierProvider(create: (_) => StrategyViewModel()),
-        ChangeNotifierProxyProvider3<SettingsViewModel, NotificationViewModel, StrategyViewModel, DashboardViewModel>(
+        ChangeNotifierProxyProvider3<
+          SettingsViewModel,
+          NotificationViewModel,
+          StrategyViewModel,
+          DashboardViewModel
+        >(
           create: (context) => DashboardViewModel(
             settingsViewModel: context.read<SettingsViewModel>(),
             notificationViewModel: context.read<NotificationViewModel>(),
@@ -51,7 +54,11 @@ class BinanceTradeApp extends StatelessWidget {
                 strategyViewModel: strategy,
               ),
         ),
-        ChangeNotifierProxyProvider2<SettingsViewModel, NotificationViewModel, TradesViewModel>(
+        ChangeNotifierProxyProvider2<
+          SettingsViewModel,
+          NotificationViewModel,
+          TradesViewModel
+        >(
           create: (context) => TradesViewModel(
             settingsViewModel: context.read<SettingsViewModel>(),
             notificationViewModel: context.read<NotificationViewModel>(),
@@ -63,14 +70,21 @@ class BinanceTradeApp extends StatelessWidget {
                 notificationViewModel: notification,
               ),
         ),
-        ChangeNotifierProxyProvider<SettingsViewModel, StrategyEvaluationViewModel>(
+        ChangeNotifierProxyProvider<
+          SettingsViewModel,
+          StrategyEvaluationViewModel
+        >(
           create: (context) {
             final settings = context.read<SettingsViewModel>();
             return StrategyEvaluationViewModel(
               binanceService: BinanceService(
                 isTestnet: settings.isTestnet,
-                apiKey: settings.isTestnet ? settings.testnetApiKey : settings.liveApiKey,
-                secretKey: settings.isTestnet ? settings.testnetSecretKey : settings.liveSecretKey,
+                apiKey: settings.isTestnet
+                    ? settings.testnetApiKey
+                    : settings.liveApiKey,
+                secretKey: settings.isTestnet
+                    ? settings.testnetSecretKey
+                    : settings.liveSecretKey,
               ),
             );
           },
@@ -78,8 +92,12 @@ class BinanceTradeApp extends StatelessWidget {
             return StrategyEvaluationViewModel(
               binanceService: BinanceService(
                 isTestnet: settings.isTestnet,
-                apiKey: settings.isTestnet ? settings.testnetApiKey : settings.liveApiKey,
-                secretKey: settings.isTestnet ? settings.testnetSecretKey : settings.liveSecretKey,
+                apiKey: settings.isTestnet
+                    ? settings.testnetApiKey
+                    : settings.liveApiKey,
+                secretKey: settings.isTestnet
+                    ? settings.testnetSecretKey
+                    : settings.liveSecretKey,
               ),
             );
           },

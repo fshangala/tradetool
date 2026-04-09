@@ -41,8 +41,11 @@ class DashboardView extends StatelessWidget {
                     Image.asset(
                       'assets/icon.png',
                       height: 60,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.show_chart, color: BinanceTheme.yellow, size: 60),
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.show_chart,
+                        color: BinanceTheme.yellow,
+                        size: 60,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     const Text(
@@ -108,7 +111,9 @@ class DashboardView extends StatelessWidget {
       body: Stack(
         children: [
           Container(
-            decoration: const BoxDecoration(gradient: BinanceTheme.darkGradient),
+            decoration: const BoxDecoration(
+              gradient: BinanceTheme.darkGradient,
+            ),
             child: Column(
               children: [
                 _buildSelectors(viewModel),
@@ -159,7 +164,9 @@ class DashboardView extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: ElevatedButton.icon(
-        onPressed: isWorking ? null : () => viewModel.retryAction(viewModel.currentSymbol),
+        onPressed: isWorking
+            ? null
+            : () => viewModel.retryAction(viewModel.currentSymbol),
         icon: isWorking
             ? const SizedBox(
                 width: 16,
@@ -189,9 +196,21 @@ class DashboardView extends StatelessWidget {
 
   Widget _buildSelectors(DashboardViewModel viewModel) {
     final intervals = [
-      '1m', '3m', '5m', '15m', '30m',
-      '1h', '2h', '4h', '6h', '8h', '12h',
-      '1d', '3d', '1w', '1M'
+      '1m',
+      '3m',
+      '5m',
+      '15m',
+      '30m',
+      '1h',
+      '2h',
+      '4h',
+      '6h',
+      '8h',
+      '12h',
+      '1d',
+      '3d',
+      '1w',
+      '1M',
     ];
     final symbols = viewModel.settingsViewModel.selectedSymbols;
 
@@ -206,13 +225,19 @@ class DashboardView extends StatelessWidget {
                   value: viewModel.currentSymbol,
                   dropdownColor: BinanceTheme.surfaceColor,
                   isExpanded: true,
-                  icon: const Icon(Icons.arrow_drop_down, color: BinanceTheme.yellow),
+                  icon: const Icon(
+                    Icons.arrow_drop_down,
+                    color: BinanceTheme.yellow,
+                  ),
                   items: symbols.map((symbol) {
                     return DropdownMenuItem(
                       value: symbol,
                       child: Text(
                         symbol,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
                       ),
                     );
                   }).toList(),
@@ -231,13 +256,20 @@ class DashboardView extends StatelessWidget {
                   value: viewModel.currentInterval,
                   dropdownColor: BinanceTheme.surfaceColor,
                   isExpanded: true,
-                  icon: const Icon(Icons.timer, color: BinanceTheme.yellow, size: 18),
+                  icon: const Icon(
+                    Icons.timer,
+                    color: BinanceTheme.yellow,
+                    size: 18,
+                  ),
                   items: intervals.map((interval) {
                     return DropdownMenuItem(
                       value: interval,
                       child: Text(
                         interval,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
                       ),
                     );
                   }).toList(),
@@ -268,8 +300,9 @@ class DashboardView extends StatelessWidget {
   Widget _buildStrategySelector(DashboardViewModel viewModel) {
     final strategies = viewModel.strategyViewModel.strategies;
     final activeId = viewModel.getActiveStrategyId(viewModel.currentSymbol);
-    final activePhase = viewModel.getActiveStrategyPhase(viewModel.currentSymbol);
-    final isLocked = viewModel.isSymbolLocked(viewModel.currentSymbol);
+    final activePhase = viewModel.getActiveStrategyPhase(
+      viewModel.currentSymbol,
+    );
     final isWorking = viewModel.isWorking(viewModel.currentSymbol);
 
     return Padding(
@@ -283,30 +316,51 @@ class DashboardView extends StatelessWidget {
                   value: activeId,
                   dropdownColor: BinanceTheme.surfaceColor,
                   isExpanded: true,
-                  hint: const Text('Select Strategy', style: TextStyle(color: Colors.white54, fontSize: 14)),
+                  hint: const Text(
+                    'Select Strategy',
+                    style: TextStyle(color: Colors.white54, fontSize: 14),
+                  ),
                   disabledHint: Text(
-                    strategies.firstWhereOrNull((s) => s.id == activeId)?.name ?? 'Active Strategy',
+                    strategies
+                            .firstWhereOrNull((s) => s.id == activeId)
+                            ?.name ??
+                        'Active Strategy',
                     style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
-                  icon: const Icon(Icons.psychology, color: BinanceTheme.yellow, size: 18),
+                  icon: const Icon(
+                    Icons.psychology,
+                    color: BinanceTheme.yellow,
+                    size: 18,
+                  ),
                   items: [
                     const DropdownMenuItem<String?>(
                       value: null,
-                      child: Text('Manual Trading (Auto Off)', style: TextStyle(color: Colors.white54, fontSize: 14)),
+                      child: Text(
+                        'Manual Trading (Auto Off)',
+                        style: TextStyle(color: Colors.white54, fontSize: 14),
+                      ),
                     ),
                     ...strategies.map((strategy) {
                       return DropdownMenuItem<String?>(
                         value: strategy.id,
                         child: Text(
                           strategy.name,
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
                         ),
                       );
                     }),
                   ],
-                  onChanged: (isLocked || isWorking) ? null : (value) {
-                    viewModel.setStrategyForSymbol(viewModel.currentSymbol, value);
-                  },
+                  onChanged: isWorking
+                      ? null
+                      : (value) {
+                          viewModel.setStrategyForSymbol(
+                            viewModel.currentSymbol,
+                            value,
+                          );
+                        },
                 ),
               ),
             ),
@@ -316,9 +370,12 @@ class DashboardView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               decoration: BoxDecoration(
-                color: (isWorking ? BinanceTheme.yellow : BinanceTheme.yellow).withValues(alpha: 0.1),
+                color: (isWorking ? BinanceTheme.yellow : BinanceTheme.yellow)
+                    .withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: BinanceTheme.yellow.withValues(alpha: 0.2)),
+                border: Border.all(
+                  color: BinanceTheme.yellow.withValues(alpha: 0.2),
+                ),
               ),
               child: Row(
                 children: [
@@ -332,7 +389,11 @@ class DashboardView extends StatelessWidget {
                       ),
                     )
                   else
-                    const Icon(Icons.auto_mode, color: BinanceTheme.yellow, size: 14),
+                    const Icon(
+                      Icons.auto_mode,
+                      color: BinanceTheme.yellow,
+                      size: 14,
+                    ),
                   const SizedBox(width: 4),
                   Text(
                     isWorking ? 'WORKING' : activePhase.toUpperCase(),
@@ -486,7 +547,9 @@ class DashboardView extends StatelessWidget {
                       Text(
                         '${pnl >= 0 ? '+' : ''}${pnl.toStringAsFixed(2)} USDT',
                         style: TextStyle(
-                          color: pnl >= 0 ? BinanceTheme.green : BinanceTheme.red,
+                          color: pnl >= 0
+                              ? BinanceTheme.green
+                              : BinanceTheme.red,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -501,17 +564,29 @@ class DashboardView extends StatelessWidget {
                       _buildPosDetail('Entry', entryPrice.toStringAsFixed(2)),
                       _buildPosDetail('Mark', markPrice.toStringAsFixed(2)),
                       ElevatedButton(
-                        onPressed: () => _showCloseConfirmation(context, viewModel, position),
+                        onPressed: () => _showCloseConfirmation(
+                          context,
+                          viewModel,
+                          position,
+                        ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: BinanceTheme.red.withValues(alpha: 0.2),
+                          backgroundColor: BinanceTheme.red.withValues(
+                            alpha: 0.2,
+                          ),
                           foregroundColor: BinanceTheme.red,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 0,
+                          ),
                           minimumSize: const Size(60, 30),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text('Close', style: TextStyle(fontSize: 12)),
+                        child: const Text(
+                          'Close',
+                          style: TextStyle(fontSize: 12),
+                        ),
                       ),
                     ],
                   ),
@@ -533,7 +608,10 @@ class DashboardView extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: BinanceTheme.surfaceColor,
-        title: const Text('Confirm Close Position', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Confirm Close Position',
+          style: TextStyle(color: Colors.white),
+        ),
         content: Text(
           'Are you sure you want to close your position for $symbol at market price?',
           style: const TextStyle(color: BinanceTheme.secondaryTextColor),
@@ -550,7 +628,10 @@ class DashboardView extends StatelessWidget {
             },
             child: const Text(
               'Close Position',
-              style: TextStyle(color: BinanceTheme.red, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: BinanceTheme.red,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -571,10 +652,7 @@ class DashboardView extends StatelessWidget {
         ),
         Text(
           value,
-          style: const TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
         ),
       ],
     );
@@ -601,9 +679,7 @@ class DashboardView extends StatelessWidget {
       ),
       selected: selected,
       onTap: onTap,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
     );
   }

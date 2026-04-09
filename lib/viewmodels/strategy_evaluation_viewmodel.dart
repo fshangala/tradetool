@@ -66,7 +66,13 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> evaluate(Strategy strategy, String symbol, String interval, double initialCapital, int leverage) async {
+  Future<void> evaluate(
+    Strategy strategy,
+    String symbol,
+    String interval,
+    double initialCapital,
+    int leverage,
+  ) async {
     reset();
     _isEvaluating = true;
     _initialCapital = initialCapital;
@@ -82,7 +88,9 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
       );
 
       if (klines.length < 100) {
-        throw Exception('Not enough data to evaluate strategy (need at least 100 candles)');
+        throw Exception(
+          'Not enough data to evaluate strategy (need at least 100 candles)',
+        );
       }
 
       // Calculate indicators for all klines
@@ -103,7 +111,7 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
       for (int i = 100; i < klines.length; i++) {
         _progress = (i - 100) / (klines.length - 100);
         notifyListeners();
-        
+
         // Small delay to allow UI to update (stream-like progress)
         await Future.delayed(const Duration(milliseconds: 2));
 
@@ -112,8 +120,14 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
 
         if (currentPosition == 'NONE') {
           // Check for Entry
-          final longMet = _evaluatePhase(strategy.longEntry.conditions, subList);
-          final shortMet = _evaluatePhase(strategy.shortEntry.conditions, subList);
+          final longMet = _evaluatePhase(
+            strategy.longEntry.conditions,
+            subList,
+          );
+          final shortMet = _evaluatePhase(
+            strategy.shortEntry.conditions,
+            subList,
+          );
 
           if (longMet) {
             currentPosition = 'LONG';
@@ -125,25 +139,42 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
         } else if (currentPosition == 'LONG') {
           // Check for Exit or Protection
           bool exitMet = _evaluatePhase(strategy.longExit.conditions, subList);
-          
+
           // Simulate Protection
           if (strategy.longEntry.useProtection) {
-            final tpPrice = entryPrice * (1 + strategy.longEntry.takeProfit / 100);
-            final slPrice = entryPrice * (1 - strategy.longEntry.stopLoss / 100);
-            
+            final tpPrice =
+                entryPrice * (1 + strategy.longEntry.takeProfit / 100);
+            final slPrice =
+                entryPrice * (1 - strategy.longEntry.stopLoss / 100);
+
             if (currentCandle.high >= tpPrice) {
-              _closeTrade(entryPrice, tpPrice, 'LONG', strategy.walletPercentage);
+              _closeTrade(
+                entryPrice,
+                tpPrice,
+                'LONG',
+                strategy.walletPercentage,
+              );
               currentPosition = 'NONE';
               continue;
             } else if (currentCandle.low <= slPrice) {
-              _closeTrade(entryPrice, slPrice, 'LONG', strategy.walletPercentage);
+              _closeTrade(
+                entryPrice,
+                slPrice,
+                'LONG',
+                strategy.walletPercentage,
+              );
               currentPosition = 'NONE';
               continue;
             }
           }
 
           if (exitMet) {
-            _closeTrade(entryPrice, currentCandle.close, 'LONG', strategy.walletPercentage);
+            _closeTrade(
+              entryPrice,
+              currentCandle.close,
+              'LONG',
+              strategy.walletPercentage,
+            );
             currentPosition = 'NONE';
           }
         } else if (currentPosition == 'SHORT') {
@@ -152,27 +183,44 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
 
           // Simulate Protection
           if (strategy.shortEntry.useProtection) {
-            final tpPrice = entryPrice * (1 - strategy.shortEntry.takeProfit / 100);
-            final slPrice = entryPrice * (1 + strategy.shortEntry.stopLoss / 100);
+            final tpPrice =
+                entryPrice * (1 - strategy.shortEntry.takeProfit / 100);
+            final slPrice =
+                entryPrice * (1 + strategy.shortEntry.stopLoss / 100);
 
             if (currentCandle.low <= tpPrice) {
-              _closeTrade(entryPrice, tpPrice, 'SHORT', strategy.walletPercentage);
+              _closeTrade(
+                entryPrice,
+                tpPrice,
+                'SHORT',
+                strategy.walletPercentage,
+              );
               currentPosition = 'NONE';
               continue;
             } else if (currentCandle.high >= slPrice) {
-              _closeTrade(entryPrice, slPrice, 'SHORT', strategy.walletPercentage);
+              _closeTrade(
+                entryPrice,
+                slPrice,
+                'SHORT',
+                strategy.walletPercentage,
+              );
               currentPosition = 'NONE';
               continue;
             }
           }
 
           if (exitMet) {
-            _closeTrade(entryPrice, currentCandle.close, 'SHORT', strategy.walletPercentage);
+            _closeTrade(
+              entryPrice,
+              currentCandle.close,
+              'SHORT',
+              strategy.walletPercentage,
+            );
             currentPosition = 'NONE';
           }
         }
       }
-      
+
       _progress = 1.0;
       _lastResult = EvaluationResult(
         symbol: symbol,
@@ -200,10 +248,10 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
   int _calculateRating() {
     if (_totalTrades == 0) return 0;
 
-    final profitFactor = _totalGrossLossUsdt.abs() > 0 
-        ? _totalGrossProfitUsdt / _totalGrossLossUsdt.abs() 
+    final profitFactor = _totalGrossLossUsdt.abs() > 0
+        ? _totalGrossProfitUsdt / _totalGrossLossUsdt.abs()
         : (_totalGrossProfitUsdt > 0 ? 5.0 : 0.0);
-    
+
     final earningsPercent = (totalEarnings / _initialCapital) * 100;
 
     if (earningsPercent > 10 && profitFactor > 2.0) return 5;
@@ -213,34 +261,41 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
     return 1;
   }
 
-  void _closeTrade(double entry, double exit, String side, double walletPercentage) {
+  void _closeTrade(
+    double entry,
+    double exit,
+    String side,
+    double walletPercentage,
+  ) {
     _totalTrades++;
-    
+
     // Position Size Calculation (Notional Value)
     final double marginUsed = _currentBalance * (walletPercentage / 100);
     final double notionalValueEntry = marginUsed * _leverage;
-    
+
     // Fees on Entry (Assume Taker)
     final double entryFee = notionalValueEntry * takerFeeRate;
     _totalFeesUsdt += entryFee;
     _currentBalance -= entryFee;
 
     // Fees on Exit (Assume Taker)
-    final double priceChangeFactor = side == 'LONG' ? (exit / entry) : (entry / exit);
+    final double priceChangeFactor = side == 'LONG'
+        ? (exit / entry)
+        : (entry / exit);
     final double notionalValueExit = notionalValueEntry * priceChangeFactor;
     final double exitFee = notionalValueExit * takerFeeRate;
     _totalFeesUsdt += exitFee;
     _currentBalance -= exitFee;
-    
+
     // PnL Calculation (Gross)
-    final double priceChangePercent = side == 'LONG' 
-        ? (exit - entry) / entry 
+    final double priceChangePercent = side == 'LONG'
+        ? (exit - entry) / entry
         : (entry - exit) / entry;
-    
+
     final double grossPnlUsdt = priceChangePercent * marginUsed * _leverage;
-    
+
     _currentBalance += grossPnlUsdt;
-    
+
     if (grossPnlUsdt > 0) {
       _totalGrossProfitUsdt += grossPnlUsdt;
     } else {
@@ -283,7 +338,10 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
 
     double rightValue;
     if (condition.targetType == ConditionType.indicator) {
-      rightValue = _getIndicatorValue(condition.targetIndicatorName!, activeData);
+      rightValue = _getIndicatorValue(
+        condition.targetIndicatorName!,
+        activeData,
+      );
     } else {
       rightValue = condition.value;
     }
@@ -291,7 +349,13 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
     return _checkOperator(condition.op, leftValue, rightValue, condition, data);
   }
 
-  bool _checkOperator(Operator op, double left, double right, Condition condition, List<KLineEntity> data) {
+  bool _checkOperator(
+    Operator op,
+    double left,
+    double right,
+    Condition condition,
+    List<KLineEntity> data,
+  ) {
     switch (op) {
       case Operator.greaterThan:
         return left > right;
@@ -302,8 +366,8 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
       case Operator.crossesAbove:
         if (data.length < 2) return false;
         final prevData = data[data.length - 2];
-        final prevLeft = condition.type == ConditionType.price 
-            ? prevData.close 
+        final prevLeft = condition.type == ConditionType.price
+            ? prevData.close
             : _getIndicatorValue(condition.indicatorName!, prevData);
         final prevRight = condition.targetIndicatorName != null
             ? _getIndicatorValue(condition.targetIndicatorName!, prevData)
@@ -312,8 +376,8 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
       case Operator.crossesBelow:
         if (data.length < 2) return false;
         final prevData = data[data.length - 2];
-        final prevLeft = condition.type == ConditionType.price 
-            ? prevData.close 
+        final prevLeft = condition.type == ConditionType.price
+            ? prevData.close
             : _getIndicatorValue(condition.indicatorName!, prevData);
         final prevRight = condition.targetIndicatorName != null
             ? _getIndicatorValue(condition.targetIndicatorName!, prevData)
@@ -327,15 +391,24 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
       case 'RSI':
         return entity.rsi ?? 50.0;
       case 'EMA7':
-        final val = entity.emaValueList != null && entity.emaValueList!.isNotEmpty ? entity.emaValueList![0] : null;
+        final val =
+            entity.emaValueList != null && entity.emaValueList!.isNotEmpty
+            ? entity.emaValueList![0]
+            : null;
         if (val == null || val == 0) return entity.close;
         return val;
       case 'EMA25':
-        final val = entity.emaValueList != null && entity.emaValueList!.length > 1 ? entity.emaValueList![1] : null;
+        final val =
+            entity.emaValueList != null && entity.emaValueList!.length > 1
+            ? entity.emaValueList![1]
+            : null;
         if (val == null || val == 0) return entity.close;
         return val;
       case 'EMA99':
-        final val = entity.emaValueList != null && entity.emaValueList!.length > 2 ? entity.emaValueList![2] : null;
+        final val =
+            entity.emaValueList != null && entity.emaValueList!.length > 2
+            ? entity.emaValueList![2]
+            : null;
         if (val == null || val == 0) return entity.close;
         return val;
       case 'UP':

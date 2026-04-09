@@ -73,7 +73,11 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     if (_formKey.currentState!.validate()) {
       if (_longEntryConditions.isEmpty && _shortEntryConditions.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('At least one entry phase (Long or Short) must have conditions.')),
+          const SnackBar(
+            content: Text(
+              'At least one entry phase (Long or Short) must have conditions.',
+            ),
+          ),
         );
         return;
       }
@@ -133,15 +137,27 @@ class _StrategyEditViewState extends State<StrategyEditView> {
               _buildLastEvaluationSection(widget.strategy!.lastResult!),
             ],
             const SizedBox(height: 24),
-            _buildEntrySection('LONG ENTRY', _longEntryConditions, _longUseProtection, _longTP, _longSL, 
+            _buildEntrySection(
+              'LONG ENTRY',
+              _longEntryConditions,
+              _longUseProtection,
+              _longTP,
+              _longSL,
               (val) => setState(() => _longUseProtection = val),
               (val) => setState(() => _longTP = val),
-              (val) => setState(() => _longSL = val)),
+              (val) => setState(() => _longSL = val),
+            ),
             const SizedBox(height: 16),
-            _buildEntrySection('SHORT ENTRY', _shortEntryConditions, _shortUseProtection, _shortTP, _shortSL,
+            _buildEntrySection(
+              'SHORT ENTRY',
+              _shortEntryConditions,
+              _shortUseProtection,
+              _shortTP,
+              _shortSL,
               (val) => setState(() => _shortUseProtection = val),
               (val) => setState(() => _shortTP = val),
-              (val) => setState(() => _shortSL = val)),
+              (val) => setState(() => _shortSL = val),
+            ),
             const SizedBox(height: 16),
             _buildExitSection('LONG EXIT', _longExitConditions),
             const SizedBox(height: 16),
@@ -179,10 +195,23 @@ class _StrategyEditViewState extends State<StrategyEditView> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildSimpleMetric('Net Earnings', '${result.netEarnings >= 0 ? '+' : ''}${result.netEarnings.toStringAsFixed(2)}', 
-                    result.netEarnings >= 0 ? Colors.greenAccent : Colors.redAccent),
-                _buildSimpleMetric('Success Rate', '${((result.profitableTrades / (result.totalTrades > 0 ? result.totalTrades : 1)) * 100).toStringAsFixed(1)}%', Colors.white),
-                _buildSimpleMetric('Trades', result.totalTrades.toString(), Colors.white),
+                _buildSimpleMetric(
+                  'Net Earnings',
+                  '${result.netEarnings >= 0 ? '+' : ''}${result.netEarnings.toStringAsFixed(2)}',
+                  result.netEarnings >= 0
+                      ? Colors.greenAccent
+                      : Colors.redAccent,
+                ),
+                _buildSimpleMetric(
+                  'Success Rate',
+                  '${((result.profitableTrades / (result.totalTrades > 0 ? result.totalTrades : 1)) * 100).toStringAsFixed(1)}%',
+                  Colors.white,
+                ),
+                _buildSimpleMetric(
+                  'Trades',
+                  result.totalTrades.toString(),
+                  Colors.white,
+                ),
               ],
             ),
           ],
@@ -195,8 +224,18 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10)),
-        Text(value, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white38, fontSize: 10),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ],
     );
   }
@@ -225,7 +264,9 @@ class _StrategyEditViewState extends State<StrategyEditView> {
           foregroundColor: BinanceTheme.yellow,
           side: const BorderSide(color: BinanceTheme.yellow),
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       ),
     );
@@ -246,19 +287,26 @@ class _StrategyEditViewState extends State<StrategyEditView> {
               decoration: const InputDecoration(
                 labelText: 'Strategy Name',
                 labelStyle: TextStyle(color: Colors.white70),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white24),
+                ),
               ),
-              validator: (value) => value == null || value.isEmpty ? 'Please enter a name' : null,
+              validator: (value) =>
+                  value == null || value.isEmpty ? 'Please enter a name' : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
               initialValue: _walletPercentage.toString(),
               style: const TextStyle(color: Colors.white),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: const InputDecoration(
                 labelText: 'Wallet Percentage for Entry (%)',
                 labelStyle: TextStyle(color: Colors.white70),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white24),
+                ),
                 helperText: 'Max 80%',
                 helperStyle: TextStyle(color: Colors.white38, fontSize: 10),
               ),
@@ -280,8 +328,16 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     );
   }
 
-  Widget _buildEntrySection(String title, List<Condition> conditions, bool useProtection, double tp, double sl, 
-      Function(bool) onProtectionChanged, Function(double) onTPChanged, Function(double) onSLChanged) {
+  Widget _buildEntrySection(
+    String title,
+    List<Condition> conditions,
+    bool useProtection,
+    double tp,
+    double sl,
+    Function(bool) onProtectionChanged,
+    Function(double) onTPChanged,
+    Function(double) onSLChanged,
+  ) {
     return Card(
       color: Colors.white.withValues(alpha: 0.05),
       child: Padding(
@@ -295,7 +351,10 @@ class _StrategyEditViewState extends State<StrategyEditView> {
             const Divider(color: Colors.white10),
             Row(
               children: [
-                const Text('Auto Protection (TP/SL)', style: TextStyle(color: Colors.white, fontSize: 14)),
+                const Text(
+                  'Auto Protection (TP/SL)',
+                  style: TextStyle(color: Colors.white, fontSize: 14),
+                ),
                 const Spacer(),
                 Switch(
                   value: useProtection,
@@ -308,7 +367,11 @@ class _StrategyEditViewState extends State<StrategyEditView> {
               Row(
                 children: [
                   Expanded(
-                    child: _buildNumberInput('Take Profit (%)', tp, onTPChanged),
+                    child: _buildNumberInput(
+                      'Take Profit (%)',
+                      tp,
+                      onTPChanged,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -358,7 +421,11 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                 style: const TextStyle(color: Colors.white, fontSize: 13),
               ),
               trailing: IconButton(
-                icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 18),
+                icon: const Icon(
+                  Icons.remove_circle_outline,
+                  color: Colors.redAccent,
+                  size: 18,
+                ),
                 onPressed: () => setState(() => conditions.removeAt(index)),
               ),
             ),
@@ -368,7 +435,10 @@ class _StrategyEditViewState extends State<StrategyEditView> {
         TextButton.icon(
           onPressed: () => _showAddConditionDialog(conditions),
           icon: const Icon(Icons.add, color: BinanceTheme.yellow, size: 16),
-          label: const Text('Add Condition', style: TextStyle(color: BinanceTheme.yellow, fontSize: 12)),
+          label: const Text(
+            'Add Condition',
+            style: TextStyle(color: BinanceTheme.yellow, fontSize: 12),
+          ),
           style: TextButton.styleFrom(padding: EdgeInsets.zero),
         ),
       ],
@@ -387,7 +457,11 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     );
   }
 
-  Widget _buildNumberInput(String label, double value, Function(double) onChanged) {
+  Widget _buildNumberInput(
+    String label,
+    double value,
+    Function(double) onChanged,
+  ) {
     return TextFormField(
       initialValue: value.toString(),
       style: const TextStyle(color: Colors.white, fontSize: 13),
@@ -395,7 +469,9 @@ class _StrategyEditViewState extends State<StrategyEditView> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white54, fontSize: 11),
-        enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white10)),
+        enabledBorder: const UnderlineInputBorder(
+          borderSide: BorderSide(color: Colors.white10),
+        ),
       ),
       onChanged: (val) {
         final doubleValue = double.tryParse(val);
@@ -406,7 +482,9 @@ class _StrategyEditViewState extends State<StrategyEditView> {
 
   String _conditionToString(Condition c) {
     final opStr = _opToSymbol(c.op);
-    String leftSide = c.type == ConditionType.price ? 'Price' : c.indicatorName!;
+    String leftSide = c.type == ConditionType.price
+        ? 'Price'
+        : c.indicatorName!;
     String rightSide = c.targetIndicatorName ?? c.value.toString();
     String suffix = c.useLastClosedData ? ' [Last]' : '';
     return '$leftSide $opStr $rightSide$suffix';
@@ -414,20 +492,43 @@ class _StrategyEditViewState extends State<StrategyEditView> {
 
   String _opToSymbol(Operator op) {
     switch (op) {
-      case Operator.greaterThan: return '>';
-      case Operator.lessThan: return '<';
-      case Operator.equal: return '==';
-      case Operator.crossesAbove: return '↑';
-      case Operator.crossesBelow: return '↓';
+      case Operator.greaterThan:
+        return '>';
+      case Operator.lessThan:
+        return '<';
+      case Operator.equal:
+        return '==';
+      case Operator.crossesAbove:
+        return '↑';
+      case Operator.crossesBelow:
+        return '↓';
     }
   }
 
   void _showEvaluationModal(BuildContext context) {
     final settings = context.read<SettingsViewModel>();
-    String selectedSymbol = settings.selectedSymbols.isNotEmpty ? settings.selectedSymbols.first : 'BTCUSDT';
+    String selectedSymbol = settings.selectedSymbols.isNotEmpty
+        ? settings.selectedSymbols.first
+        : 'BTCUSDT';
     String selectedInterval = '1h';
     int selectedLeverage = 10;
-    final intervals = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w', '1M'];
+    final intervals = [
+      '1m',
+      '3m',
+      '5m',
+      '15m',
+      '30m',
+      '1h',
+      '2h',
+      '4h',
+      '6h',
+      '8h',
+      '12h',
+      '1d',
+      '3d',
+      '1w',
+      '1M',
+    ];
     final leverages = [1, 5, 10, 20];
     final capitalController = TextEditingController(text: '1000');
 
@@ -453,7 +554,11 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                     children: [
                       const Text(
                         'Strategy Evaluation',
-                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.white54),
@@ -477,7 +582,9 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                                   'Symbol',
                                   selectedSymbol,
                                   settings.selectedSymbols,
-                                  (val) => setModalState(() => selectedSymbol = val!),
+                                  (val) => setModalState(
+                                    () => selectedSymbol = val!,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 16),
@@ -486,7 +593,9 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                                   'Interval',
                                   selectedInterval,
                                   intervals,
-                                  (val) => setModalState(() => selectedInterval = val!),
+                                  (val) => setModalState(
+                                    () => selectedInterval = val!,
+                                  ),
                                 ),
                               ),
                             ],
@@ -500,15 +609,33 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('Initial Capital (USDT)', style: TextStyle(color: BinanceTheme.yellow, fontSize: 11)),
+                                    const Text(
+                                      'Initial Capital (USDT)',
+                                      style: TextStyle(
+                                        color: BinanceTheme.yellow,
+                                        fontSize: 11,
+                                      ),
+                                    ),
                                     TextField(
                                       controller: capitalController,
-                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                            decimal: true,
+                                          ),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                      ),
                                       decoration: const InputDecoration(
                                         isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(vertical: 8),
-                                        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                                        contentPadding: EdgeInsets.symmetric(
+                                          vertical: 8,
+                                        ),
+                                        enabledBorder: UnderlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: Colors.white24,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -521,19 +648,32 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                                   'Leverage',
                                   '${selectedLeverage}x',
                                   leverages.map((l) => '${l}x').toList(),
-                                  (val) => setModalState(() => selectedLeverage = int.parse(val!.replaceAll('x', ''))),
+                                  (val) => setModalState(
+                                    () => selectedLeverage = int.parse(
+                                      val!.replaceAll('x', ''),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 32),
-                          if (evalViewModel.isEvaluating || evalViewModel.progress > 0) ...[
-                            const Text('Progress', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          if (evalViewModel.isEvaluating ||
+                              evalViewModel.progress > 0) ...[
+                            const Text(
+                              'Progress',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
                             const SizedBox(height: 8),
                             LinearProgressIndicator(
                               value: evalViewModel.progress,
                               backgroundColor: Colors.white10,
-                              valueColor: const AlwaysStoppedAnimation<Color>(BinanceTheme.yellow),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                BinanceTheme.yellow,
+                              ),
                             ),
                             const SizedBox(height: 24),
                             _buildResultGrid(evalViewModel),
@@ -543,7 +683,10 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                               padding: const EdgeInsets.only(top: 16),
                               child: Text(
                                 evalViewModel.error!,
-                                style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                                style: const TextStyle(
+                                  color: Colors.redAccent,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                           const SizedBox(height: 16),
@@ -574,16 +717,37 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                                   takeProfit: _shortTP,
                                   stopLoss: _shortSL,
                                 ),
-                                longExit: StrategyPhase(conditions: _longExitConditions),
-                                shortExit: StrategyPhase(conditions: _shortExitConditions),
+                                longExit: StrategyPhase(
+                                  conditions: _longExitConditions,
+                                ),
+                                shortExit: StrategyPhase(
+                                  conditions: _shortExitConditions,
+                                ),
                               );
-                              final capital = double.tryParse(capitalController.text) ?? 1000.0;
-                              evalViewModel.evaluate(strategy, selectedSymbol, selectedInterval, capital, selectedLeverage).then((_) {
-                                if (context.mounted && evalViewModel.lastResult != null && evalViewModel.error == null) {
-                                  final updatedStrategy = strategy.copyWith(lastResult: evalViewModel.lastResult);
-                                  Provider.of<StrategyViewModel>(context, listen: false).updateStrategy(updatedStrategy);
-                                }
-                              });
+                              final capital =
+                                  double.tryParse(capitalController.text) ??
+                                  1000.0;
+                              evalViewModel
+                                  .evaluate(
+                                    strategy,
+                                    selectedSymbol,
+                                    selectedInterval,
+                                    capital,
+                                    selectedLeverage,
+                                  )
+                                  .then((_) {
+                                    if (context.mounted &&
+                                        evalViewModel.lastResult != null &&
+                                        evalViewModel.error == null) {
+                                      final updatedStrategy = strategy.copyWith(
+                                        lastResult: evalViewModel.lastResult,
+                                      );
+                                      Provider.of<StrategyViewModel>(
+                                        context,
+                                        listen: false,
+                                      ).updateStrategy(updatedStrategy);
+                                    }
+                                  });
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: BinanceTheme.yellow,
@@ -591,7 +755,11 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         disabledBackgroundColor: Colors.white10,
                       ),
-                      child: Text(evalViewModel.isEvaluating ? 'Evaluating...' : 'Start Evaluation'),
+                      child: Text(
+                        evalViewModel.isEvaluating
+                            ? 'Evaluating...'
+                            : 'Start Evaluation',
+                      ),
                     ),
                   ),
                 ],
@@ -603,18 +771,28 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     );
   }
 
-  Widget _buildModalDropdown(String label, String value, List<String> items, Function(String?) onChanged) {
+  Widget _buildModalDropdown(
+    String label,
+    String value,
+    List<String> items,
+    Function(String?) onChanged,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: BinanceTheme.yellow, fontSize: 11)),
+        Text(
+          label,
+          style: const TextStyle(color: BinanceTheme.yellow, fontSize: 11),
+        ),
         DropdownButton<String>(
           value: value,
           isExpanded: true,
           dropdownColor: Colors.grey[850],
           style: const TextStyle(color: Colors.white, fontSize: 14),
           underline: Container(height: 1, color: Colors.white24),
-          items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
+          items: items
+              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+              .toList(),
           onChanged: onChanged,
         ),
       ],
@@ -632,9 +810,21 @@ class _StrategyEditViewState extends State<StrategyEditView> {
           crossAxisSpacing: 10,
           physics: const NeverScrollableScrollPhysics(),
           children: [
-            _buildResultItem('Total Trades', viewModel.totalTrades.toString(), Colors.white),
-            _buildResultItem('Profitable', viewModel.profitableTrades.toString(), Colors.greenAccent),
-            _buildResultItem('Losses', viewModel.lossTrades.toString(), Colors.redAccent),
+            _buildResultItem(
+              'Total Trades',
+              viewModel.totalTrades.toString(),
+              Colors.white,
+            ),
+            _buildResultItem(
+              'Profitable',
+              viewModel.profitableTrades.toString(),
+              Colors.greenAccent,
+            ),
+            _buildResultItem(
+              'Losses',
+              viewModel.lossTrades.toString(),
+              Colors.redAccent,
+            ),
           ],
         ),
         const SizedBox(height: 10),
@@ -646,9 +836,21 @@ class _StrategyEditViewState extends State<StrategyEditView> {
           crossAxisSpacing: 10,
           physics: const NeverScrollableScrollPhysics(),
           children: [
-            _buildResultItem('Gross Profit', '+${viewModel.totalGrossProfitUsdt.toStringAsFixed(2)}', Colors.greenAccent),
-            _buildResultItem('Gross Loss', viewModel.totalGrossLossUsdt.toStringAsFixed(2), Colors.redAccent),
-            _buildResultItem('Total Fees', '-${viewModel.totalFeesUsdt.toStringAsFixed(2)}', Colors.orangeAccent),
+            _buildResultItem(
+              'Gross Profit',
+              '+${viewModel.totalGrossProfitUsdt.toStringAsFixed(2)}',
+              Colors.greenAccent,
+            ),
+            _buildResultItem(
+              'Gross Loss',
+              viewModel.totalGrossLossUsdt.toStringAsFixed(2),
+              Colors.redAccent,
+            ),
+            _buildResultItem(
+              'Total Fees',
+              '-${viewModel.totalFeesUsdt.toStringAsFixed(2)}',
+              Colors.orangeAccent,
+            ),
           ],
         ),
         const SizedBox(height: 10),
@@ -661,7 +863,14 @@ class _StrategyEditViewState extends State<StrategyEditView> {
           physics: const NeverScrollableScrollPhysics(),
           children: [
             const SizedBox.shrink(),
-            _buildResultItem('Net Earnings', viewModel.totalEarnings.toStringAsFixed(2), viewModel.totalEarnings >= 0 ? Colors.greenAccent : Colors.redAccent, isBold: true),
+            _buildResultItem(
+              'Net Earnings',
+              viewModel.totalEarnings.toStringAsFixed(2),
+              viewModel.totalEarnings >= 0
+                  ? Colors.greenAccent
+                  : Colors.redAccent,
+              isBold: true,
+            ),
             const SizedBox.shrink(),
           ],
         ),
@@ -669,7 +878,12 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     );
   }
 
-  Widget _buildResultItem(String label, String value, Color color, {bool isBold = false}) {
+  Widget _buildResultItem(
+    String label,
+    String value,
+    Color color, {
+    bool isBold = false,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
@@ -679,16 +893,20 @@ class _StrategyEditViewState extends State<StrategyEditView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 10), textAlign: TextAlign.center),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white54, fontSize: 10),
+            textAlign: TextAlign.center,
+          ),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
-              value, 
+              value,
               style: TextStyle(
-                color: color, 
-                fontSize: 14, 
-                fontWeight: isBold ? FontWeight.bold : FontWeight.normal
-              )
+                color: color,
+                fontSize: 14,
+                fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              ),
             ),
           ),
         ],
@@ -710,20 +928,29 @@ class _StrategyEditViewState extends State<StrategyEditView> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: Colors.grey[900],
-          title: const Text('Add Condition', style: TextStyle(color: Colors.white)),
+          title: const Text(
+            'Add Condition',
+            style: TextStyle(color: Colors.white),
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Source', style: TextStyle(color: BinanceTheme.yellow, fontSize: 12)),
+                const Text(
+                  'Source',
+                  style: TextStyle(color: BinanceTheme.yellow, fontSize: 12),
+                ),
                 DropdownButton<ConditionType>(
                   value: selectedType,
                   dropdownColor: Colors.grey[850],
                   isExpanded: true,
                   style: const TextStyle(color: Colors.white),
                   items: ConditionType.values.map((type) {
-                    return DropdownMenuItem(value: type, child: Text(type.name.toUpperCase()));
+                    return DropdownMenuItem(
+                      value: type,
+                      child: Text(type.name.toUpperCase()),
+                    );
                   }).toList(),
                   onChanged: (val) => setDialogState(() => selectedType = val!),
                 ),
@@ -733,20 +960,42 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                     dropdownColor: Colors.grey[850],
                     isExpanded: true,
                     style: const TextStyle(color: Colors.white),
-                    items: ['RSI', 'EMA7', 'EMA25', 'EMA99', 'UP', 'MB', 'DN', 'MACD', 'DIF', 'DEA'].map((name) {
-                      return DropdownMenuItem(value: name, child: Text(name));
-                    }).toList(),
-                    onChanged: (val) => setDialogState(() => selectedIndicator = val!),
+                    items:
+                        [
+                          'RSI',
+                          'EMA7',
+                          'EMA25',
+                          'EMA99',
+                          'UP',
+                          'MB',
+                          'DN',
+                          'MACD',
+                          'DIF',
+                          'DEA',
+                        ].map((name) {
+                          return DropdownMenuItem(
+                            value: name,
+                            child: Text(name),
+                          );
+                        }).toList(),
+                    onChanged: (val) =>
+                        setDialogState(() => selectedIndicator = val!),
                   ),
                 const SizedBox(height: 16),
-                const Text('Operator', style: TextStyle(color: BinanceTheme.yellow, fontSize: 12)),
+                const Text(
+                  'Operator',
+                  style: TextStyle(color: BinanceTheme.yellow, fontSize: 12),
+                ),
                 DropdownButton<Operator>(
                   value: selectedOp,
                   dropdownColor: Colors.grey[850],
                   isExpanded: true,
                   style: const TextStyle(color: Colors.white),
                   items: Operator.values.map((op) {
-                    return DropdownMenuItem(value: op, child: Text(op.name.toUpperCase()));
+                    return DropdownMenuItem(
+                      value: op,
+                      child: Text(op.name.toUpperCase()),
+                    );
                   }).toList(),
                   onChanged: (val) => setDialogState(() => selectedOp = val!),
                 ),
@@ -754,17 +1003,33 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Compare with', style: TextStyle(color: BinanceTheme.yellow, fontSize: 12)),
+                    const Text(
+                      'Compare with',
+                      style: TextStyle(
+                        color: BinanceTheme.yellow,
+                        fontSize: 12,
+                      ),
+                    ),
                     Row(
                       children: [
-                        const Text('Value', style: TextStyle(color: Colors.white54, fontSize: 10)),
+                        const Text(
+                          'Value',
+                          style: TextStyle(color: Colors.white54, fontSize: 10),
+                        ),
                         Switch(
                           value: isComparingWithIndicator,
                           activeThumbColor: BinanceTheme.yellow,
-                          activeTrackColor: BinanceTheme.yellow.withValues(alpha: 0.5),
-                          onChanged: (val) => setDialogState(() => isComparingWithIndicator = val),
+                          activeTrackColor: BinanceTheme.yellow.withValues(
+                            alpha: 0.5,
+                          ),
+                          onChanged: (val) => setDialogState(
+                            () => isComparingWithIndicator = val,
+                          ),
                         ),
-                        const Text('Indicator', style: TextStyle(color: Colors.white54, fontSize: 10)),
+                        const Text(
+                          'Indicator',
+                          style: TextStyle(color: Colors.white54, fontSize: 10),
+                        ),
                       ],
                     ),
                   ],
@@ -775,15 +1040,33 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                     dropdownColor: Colors.grey[850],
                     isExpanded: true,
                     style: const TextStyle(color: Colors.white),
-                    items: ['RSI', 'EMA7', 'EMA25', 'EMA99', 'UP', 'MB', 'DN', 'MACD', 'DIF', 'DEA'].map((name) {
-                      return DropdownMenuItem(value: name, child: Text(name));
-                    }).toList(),
-                    onChanged: (val) => setDialogState(() => targetIndicator = val!),
+                    items:
+                        [
+                          'RSI',
+                          'EMA7',
+                          'EMA25',
+                          'EMA99',
+                          'UP',
+                          'MB',
+                          'DN',
+                          'MACD',
+                          'DIF',
+                          'DEA',
+                        ].map((name) {
+                          return DropdownMenuItem(
+                            value: name,
+                            child: Text(name),
+                          );
+                        }).toList(),
+                    onChanged: (val) =>
+                        setDialogState(() => targetIndicator = val!),
                   )
                 else
                   TextField(
                     controller: valueController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(
                       labelText: 'Constant Value',
@@ -793,13 +1076,22 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    const Text('Use Last Closed Candle', style: TextStyle(color: BinanceTheme.yellow, fontSize: 12)),
+                    const Text(
+                      'Use Last Closed Candle',
+                      style: TextStyle(
+                        color: BinanceTheme.yellow,
+                        fontSize: 12,
+                      ),
+                    ),
                     const Spacer(),
                     Switch(
                       value: useLastClosedData,
                       activeThumbColor: BinanceTheme.yellow,
-                      activeTrackColor: BinanceTheme.yellow.withValues(alpha: 0.5),
-                      onChanged: (val) => setDialogState(() => useLastClosedData = val),
+                      activeTrackColor: BinanceTheme.yellow.withValues(
+                        alpha: 0.5,
+                      ),
+                      onChanged: (val) =>
+                          setDialogState(() => useLastClosedData = val),
                     ),
                   ],
                 ),
@@ -821,19 +1113,30 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                 }
 
                 setState(() {
-                  conditions.add(Condition(
-                    type: selectedType,
-                    indicatorName: selectedType == ConditionType.indicator ? selectedIndicator : null,
-                    op: selectedOp,
-                    value: value,
-                    targetType: isComparingWithIndicator ? ConditionType.indicator : ConditionType.price,
-                    targetIndicatorName: isComparingWithIndicator ? targetIndicator : null,
-                    useLastClosedData: useLastClosedData,
-                  ));
+                  conditions.add(
+                    Condition(
+                      type: selectedType,
+                      indicatorName: selectedType == ConditionType.indicator
+                          ? selectedIndicator
+                          : null,
+                      op: selectedOp,
+                      value: value,
+                      targetType: isComparingWithIndicator
+                          ? ConditionType.indicator
+                          : ConditionType.price,
+                      targetIndicatorName: isComparingWithIndicator
+                          ? targetIndicator
+                          : null,
+                      useLastClosedData: useLastClosedData,
+                    ),
+                  );
                 });
                 Navigator.pop(context);
               },
-              child: const Text('Add', style: TextStyle(color: BinanceTheme.yellow)),
+              child: const Text(
+                'Add',
+                style: TextStyle(color: BinanceTheme.yellow),
+              ),
             ),
           ],
         ),

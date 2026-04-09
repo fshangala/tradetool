@@ -221,7 +221,11 @@ class _SettingsViewState extends State<SettingsView> {
               label: Text(symbol),
               backgroundColor: BinanceTheme.yellow.withValues(alpha: 0.2),
               labelStyle: const TextStyle(color: Colors.white, fontSize: 12),
-              deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white),
+              deleteIcon: const Icon(
+                Icons.close,
+                size: 16,
+                color: Colors.white,
+              ),
               onDeleted: () => viewModel.removeSymbol(symbol),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -249,7 +253,7 @@ class _SettingsViewState extends State<SettingsView> {
   void _showAddSymbolDialog(BuildContext context, SettingsViewModel viewModel) {
     viewModel.fetchAllAvailableSymbols();
     String searchQuery = '';
-    
+
     showDialog(
       context: context,
       builder: (context) {
@@ -261,7 +265,7 @@ class _SettingsViewState extends State<SettingsView> {
                 final filteredSymbols = viewModel.allSymbols
                     .where((s) => s.symbol.contains(searchQuery.toUpperCase()))
                     .toList();
-                    
+
                 return AlertDialog(
                   backgroundColor: BinanceTheme.surfaceColor,
                   title: const Text(
@@ -280,11 +284,15 @@ class _SettingsViewState extends State<SettingsView> {
                         : Column(
                             children: [
                               TextField(
-                                onChanged: (value) => setDialogState(() => searchQuery = value),
+                                onChanged: (value) =>
+                                    setDialogState(() => searchQuery = value),
                                 style: const TextStyle(color: Colors.white),
                                 decoration: const InputDecoration(
                                   hintText: 'Search symbols (e.g. BTC)',
-                                  prefixIcon: Icon(Icons.search, color: Colors.grey),
+                                  prefixIcon: Icon(
+                                    Icons.search,
+                                    color: Colors.grey,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -294,16 +302,21 @@ class _SettingsViewState extends State<SettingsView> {
                                   itemBuilder: (context, index) {
                                     final symbolModel = filteredSymbols[index];
                                     final symbol = symbolModel.symbol;
-                                    final isSelected =
-                                        viewModel.selectedSymbols.contains(symbol);
+                                    final isSelected = viewModel.selectedSymbols
+                                        .contains(symbol);
                                     return ListTile(
                                       title: Text(
                                         symbol,
-                                        style: const TextStyle(color: Colors.white),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
                                       ),
                                       subtitle: Text(
                                         'Prec: Q:${symbolModel.quantityPrecision} P:${symbolModel.pricePrecision}',
-                                        style: const TextStyle(color: Colors.grey, fontSize: 10),
+                                        style: const TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 10,
+                                        ),
                                       ),
                                       trailing: isSelected
                                           ? const Icon(
@@ -338,9 +351,9 @@ class _SettingsViewState extends State<SettingsView> {
                     ),
                   ],
                 );
-              }
+              },
             );
-          }
+          },
         );
       },
     );

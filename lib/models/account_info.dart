@@ -34,17 +34,31 @@ class AccountAsset {
   factory AccountAsset.fromJson(Map<String, dynamic> json) {
     return AccountAsset(
       asset: json['asset']?.toString() ?? '',
-      walletBalance: double.tryParse(json['walletBalance']?.toString() ?? '0') ?? 0.0,
-      unrealizedProfit: double.tryParse(json['unrealizedProfit']?.toString() ?? '0') ?? 0.0,
-      marginBalance: double.tryParse(json['marginBalance']?.toString() ?? '0') ?? 0.0,
-      maintMargin: double.tryParse(json['maintMargin']?.toString() ?? '0') ?? 0.0,
-      initialMargin: double.tryParse(json['initialMargin']?.toString() ?? '0') ?? 0.0,
-      positionInitialMargin: double.tryParse(json['positionInitialMargin']?.toString() ?? '0') ?? 0.0,
-      openOrderInitialMargin: double.tryParse(json['openOrderInitialMargin']?.toString() ?? '0') ?? 0.0,
-      crossWalletBalance: double.tryParse(json['crossWalletBalance']?.toString() ?? '0') ?? 0.0,
-      crossUnrealizedProfit: double.tryParse(json['crossUnrealizedProfit']?.toString() ?? '0') ?? 0.0,
-      availableBalance: double.tryParse(json['availableBalance']?.toString() ?? '0') ?? 0.0,
-      maxWithdrawAmount: double.tryParse(json['maxWithdrawAmount']?.toString() ?? '0') ?? 0.0,
+      walletBalance:
+          double.tryParse(json['walletBalance']?.toString() ?? '0') ?? 0.0,
+      unrealizedProfit:
+          double.tryParse(json['unrealizedProfit']?.toString() ?? '0') ?? 0.0,
+      marginBalance:
+          double.tryParse(json['marginBalance']?.toString() ?? '0') ?? 0.0,
+      maintMargin:
+          double.tryParse(json['maintMargin']?.toString() ?? '0') ?? 0.0,
+      initialMargin:
+          double.tryParse(json['initialMargin']?.toString() ?? '0') ?? 0.0,
+      positionInitialMargin:
+          double.tryParse(json['positionInitialMargin']?.toString() ?? '0') ??
+          0.0,
+      openOrderInitialMargin:
+          double.tryParse(json['openOrderInitialMargin']?.toString() ?? '0') ??
+          0.0,
+      crossWalletBalance:
+          double.tryParse(json['crossWalletBalance']?.toString() ?? '0') ?? 0.0,
+      crossUnrealizedProfit:
+          double.tryParse(json['crossUnrealizedProfit']?.toString() ?? '0') ??
+          0.0,
+      availableBalance:
+          double.tryParse(json['availableBalance']?.toString() ?? '0') ?? 0.0,
+      maxWithdrawAmount:
+          double.tryParse(json['maxWithdrawAmount']?.toString() ?? '0') ?? 0.0,
       marginAvailable: json['marginAvailable'] as bool? ?? false,
       updateTime: int.tryParse(json['updateTime']?.toString() ?? '0') ?? 0,
     );
@@ -116,18 +130,41 @@ class AccountInformation {
       canDeposit: json['canDeposit'] as bool? ?? false,
       canWithdraw: json['canWithdraw'] as bool? ?? false,
       updateTime: int.tryParse(json['updateTime']?.toString() ?? '0') ?? 0,
-      totalInitialMargin: double.tryParse(json['totalInitialMargin']?.toString() ?? '0') ?? 0.0,
-      totalMaintMargin: double.tryParse(json['totalMaintMargin']?.toString() ?? '0') ?? 0.0,
-      totalWalletBalance: double.tryParse(json['totalWalletBalance']?.toString() ?? '0') ?? 0.0,
-      totalUnrealizedProfit: double.tryParse(json['totalUnrealizedProfit']?.toString() ?? '0') ?? 0.0,
-      totalMarginBalance: double.tryParse(json['totalMarginBalance']?.toString() ?? '0') ?? 0.0,
-      totalPositionInitialMargin: double.tryParse(json['totalPositionInitialMargin']?.toString() ?? '0') ?? 0.0,
-      totalOpenOrderInitialMargin: double.tryParse(json['totalOpenOrderInitialMargin']?.toString() ?? '0') ?? 0.0,
-      totalCrossWalletBalance: double.tryParse(json['totalCrossWalletBalance']?.toString() ?? '0') ?? 0.0,
-      totalCrossUnrealizedProfit: double.tryParse(json['totalCrossUnrealizedProfit']?.toString() ?? '0') ?? 0.0,
-      availableBalance: double.tryParse(json['availableBalance']?.toString() ?? '0') ?? 0.0,
-      maxWithdrawAmount: double.tryParse(json['maxWithdrawAmount']?.toString() ?? '0') ?? 0.0,
-      assets: (json['assets'] as List<dynamic>?)
+      totalInitialMargin:
+          double.tryParse(json['totalInitialMargin']?.toString() ?? '0') ?? 0.0,
+      totalMaintMargin:
+          double.tryParse(json['totalMaintMargin']?.toString() ?? '0') ?? 0.0,
+      totalWalletBalance:
+          double.tryParse(json['totalWalletBalance']?.toString() ?? '0') ?? 0.0,
+      totalUnrealizedProfit:
+          double.tryParse(json['totalUnrealizedProfit']?.toString() ?? '0') ??
+          0.0,
+      totalMarginBalance:
+          double.tryParse(json['totalMarginBalance']?.toString() ?? '0') ?? 0.0,
+      totalPositionInitialMargin:
+          double.tryParse(
+            json['totalPositionInitialMargin']?.toString() ?? '0',
+          ) ??
+          0.0,
+      totalOpenOrderInitialMargin:
+          double.tryParse(
+            json['totalOpenOrderInitialMargin']?.toString() ?? '0',
+          ) ??
+          0.0,
+      totalCrossWalletBalance:
+          double.tryParse(json['totalCrossWalletBalance']?.toString() ?? '0') ??
+          0.0,
+      totalCrossUnrealizedProfit:
+          double.tryParse(
+            json['totalCrossUnrealizedProfit']?.toString() ?? '0',
+          ) ??
+          0.0,
+      availableBalance:
+          double.tryParse(json['availableBalance']?.toString() ?? '0') ?? 0.0,
+      maxWithdrawAmount:
+          double.tryParse(json['maxWithdrawAmount']?.toString() ?? '0') ?? 0.0,
+      assets:
+          (json['assets'] as List<dynamic>?)
               ?.map((e) => AccountAsset.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],

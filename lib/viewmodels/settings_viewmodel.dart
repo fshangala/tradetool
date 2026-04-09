@@ -39,11 +39,13 @@ class SettingsViewModel extends ChangeNotifier {
     _testnetApiKey = prefs.getString(AppConstants.keyTestnetApiKey) ?? '';
     _testnetSecretKey = prefs.getString(AppConstants.keyTestnetSecretKey) ?? '';
     _isTestnet = prefs.getBool(AppConstants.keyIsTestnet) ?? true;
-    _selectedSymbols = prefs.getStringList('custom_symbols') ?? ['BTCUSDT', 'ETHUSDT', 'BNBUSDT'];
-    
+    _selectedSymbols =
+        prefs.getStringList('custom_symbols') ??
+        ['BTCUSDT', 'ETHUSDT', 'BNBUSDT'];
+
     // Initial fetch to populate map for default symbols
     await fetchAllAvailableSymbols();
-    
+
     notifyListeners();
   }
 

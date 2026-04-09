@@ -39,7 +39,9 @@ class TradesView extends StatelessWidget {
         child: Consumer<TradesViewModel>(
           builder: (context, viewModel, child) {
             if (viewModel.isLoading && viewModel.trades.isEmpty) {
-              return const Center(child: CircularProgressIndicator(color: BinanceTheme.yellow));
+              return const Center(
+                child: CircularProgressIndicator(color: BinanceTheme.yellow),
+              );
             }
 
             if (viewModel.trades.isEmpty) {
@@ -90,7 +92,10 @@ class _TradeListTile extends StatelessWidget {
           children: [
             Text(
               trade.symbol,
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(width: 8),
             Container(
@@ -101,14 +106,20 @@ class _TradeListTile extends StatelessWidget {
               ),
               child: Text(
                 trade.side,
-                style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             const Spacer(),
             Text(
               '${trade.realizedPnl} USDT',
               style: TextStyle(
-                color: double.parse(trade.realizedPnl) >= 0 ? Colors.green : Colors.red,
+                color: double.parse(trade.realizedPnl) >= 0
+                    ? Colors.green
+                    : Colors.red,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -121,8 +132,14 @@ class _TradeListTile extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Price: ${trade.price}', style: const TextStyle(color: Colors.white70)),
-                Text('Qty: ${trade.qty}', style: const TextStyle(color: Colors.white70)),
+                Text(
+                  'Price: ${trade.price}',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                Text(
+                  'Qty: ${trade.qty}',
+                  style: const TextStyle(color: Colors.white70),
+                ),
               ],
             ),
             const SizedBox(height: 4),
@@ -181,20 +198,35 @@ class _TradeListTile extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               _DetailRow(label: 'Symbol', value: trade.symbol),
-              _DetailRow(label: 'Side', value: trade.side, valueColor: trade.side == 'BUY' ? Colors.green : Colors.red),
+              _DetailRow(
+                label: 'Side',
+                value: trade.side,
+                valueColor: trade.side == 'BUY' ? Colors.green : Colors.red,
+              ),
               _DetailRow(label: 'Position Side', value: trade.positionSide),
               _DetailRow(label: 'Price', value: '${trade.price} USDT'),
               _DetailRow(label: 'Quantity', value: trade.qty),
-              _DetailRow(label: 'Quote Quantity', value: '${trade.quoteQty} USDT'),
-              _DetailRow(label: 'Commission', value: '${trade.commission} ${trade.commissionAsset}'),
+              _DetailRow(
+                label: 'Quote Quantity',
+                value: '${trade.quoteQty} USDT',
+              ),
+              _DetailRow(
+                label: 'Commission',
+                value: '${trade.commission} ${trade.commissionAsset}',
+              ),
               _DetailRow(
                 label: 'Realized PnL',
                 value: '${trade.realizedPnl} USDT',
-                valueColor: double.parse(trade.realizedPnl) >= 0 ? Colors.green : Colors.red,
+                valueColor: double.parse(trade.realizedPnl) >= 0
+                    ? Colors.green
+                    : Colors.red,
               ),
               _DetailRow(label: 'Trade ID', value: trade.id.toString()),
               _DetailRow(label: 'Order ID', value: trade.orderId.toString()),
-              _DetailRow(label: 'Time', value: DateFormat('yyyy-MM-dd HH:mm:ss').format(trade.dateTime)),
+              _DetailRow(
+                label: 'Time',
+                value: DateFormat('yyyy-MM-dd HH:mm:ss').format(trade.dateTime),
+              ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -208,7 +240,10 @@ class _TradeListTile extends StatelessWidget {
                     ),
                   ),
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Close', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -257,7 +292,10 @@ class RoundedRectangleAfter extends OutlinedBorder {
   });
 
   @override
-  OutlinedBorder copyWith({BorderSide? side, BorderRadiusGeometry? borderRadius}) {
+  OutlinedBorder copyWith({
+    BorderSide? side,
+    BorderRadiusGeometry? borderRadius,
+  }) {
     return RoundedRectangleAfter(
       borderRadius: borderRadius ?? this.borderRadius,
       side: side ?? this.side,
@@ -269,7 +307,9 @@ class RoundedRectangleAfter extends OutlinedBorder {
 
   @override
   Path getInnerPath(Rect rect, {ui.TextDirection? textDirection}) {
-    return Path()..addRRect(borderRadius.resolve(textDirection).toRRect(rect).deflate(side.width));
+    return Path()..addRRect(
+      borderRadius.resolve(textDirection).toRRect(rect).deflate(side.width),
+    );
   }
 
   @override
@@ -295,7 +335,9 @@ class RoundedRectangleAfter extends OutlinedBorder {
   @override
   bool operator ==(Object other) {
     if (other.runtimeType != runtimeType) return false;
-    return other is RoundedRectangleAfter && other.side == side && other.borderRadius == borderRadius;
+    return other is RoundedRectangleAfter &&
+        other.side == side &&
+        other.borderRadius == borderRadius;
   }
 
   @override

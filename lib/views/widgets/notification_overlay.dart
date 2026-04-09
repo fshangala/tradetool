@@ -49,7 +49,7 @@ class _NotificationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     Color iconColor;
     IconData icon;
-    
+
     switch (item.type) {
       case NotificationType.success:
         iconColor = BinanceTheme.green;
@@ -76,9 +76,7 @@ class _NotificationTile extends StatelessWidget {
             decoration: BoxDecoration(
               color: BinanceTheme.surfaceColor.withValues(alpha: 0.7),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: iconColor.withValues(alpha: 0.3),
-              ),
+              border: Border.all(color: iconColor.withValues(alpha: 0.3)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,10 +86,7 @@ class _NotificationTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     item.message,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ),
                 const SizedBox(width: 8),

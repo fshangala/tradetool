@@ -22,11 +22,7 @@ class BinanceService {
   final String? apiKey;
   final String? secretKey;
 
-  BinanceService({
-    required this.isTestnet,
-    this.apiKey,
-    this.secretKey,
-  });
+  BinanceService({required this.isTestnet, this.apiKey, this.secretKey});
 
   /// Returns the base URL based on the environment (Live or Testnet).
   String get baseUrl => isTestnet ? testnetBaseUrl : liveBaseUrl;
@@ -55,9 +51,7 @@ class BinanceService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/fapi/v3/account?$queryString&signature=$signature'),
-      headers: {
-        'X-MBX-APIKEY': apiKey!,
-      },
+      headers: {'X-MBX-APIKEY': apiKey!},
     );
 
     if (response.statusCode == 200) {
@@ -80,10 +74,10 @@ class BinanceService {
     final String signature = _generateSignature(queryString);
 
     final response = await http.get(
-      Uri.parse('$baseUrl/fapi/v1/accountConfig?$queryString&signature=$signature'),
-      headers: {
-        'X-MBX-APIKEY': apiKey!,
-      },
+      Uri.parse(
+        '$baseUrl/fapi/v1/accountConfig?$queryString&signature=$signature',
+      ),
+      headers: {'X-MBX-APIKEY': apiKey!},
     );
 
     if (response.statusCode == 200) {
@@ -113,10 +107,10 @@ class BinanceService {
     final String signature = _generateSignature(queryString);
 
     final response = await http.get(
-      Uri.parse('$baseUrl/fapi/v3/positionRisk?$queryString&signature=$signature'),
-      headers: {
-        'X-MBX-APIKEY': apiKey!,
-      },
+      Uri.parse(
+        '$baseUrl/fapi/v3/positionRisk?$queryString&signature=$signature',
+      ),
+      headers: {'X-MBX-APIKEY': apiKey!},
     );
 
     if (response.statusCode == 200) {
@@ -170,7 +164,9 @@ class BinanceService {
     if (price != null) params['price'] = price.toString();
     if (stopPrice != null) params['stopPrice'] = stopPrice.toString();
     if (timeInForce != null) params['timeInForce'] = timeInForce;
-    if (positionSide != null) params['positionSide'] = positionSide.toUpperCase();
+    if (positionSide != null) {
+      params['positionSide'] = positionSide.toUpperCase();
+    }
     if (reduceOnly == true) params['reduceOnly'] = 'true';
     if (closePosition == true) params['closePosition'] = 'true';
     if (workingType != null) params['workingType'] = workingType.toUpperCase();
@@ -180,9 +176,7 @@ class BinanceService {
 
     final response = await http.post(
       Uri.parse('$baseUrl/fapi/v1/order?$queryString&signature=$signature'),
-      headers: {
-        'X-MBX-APIKEY': apiKey!,
-      },
+      headers: {'X-MBX-APIKEY': apiKey!},
     );
 
     if (response.statusCode == 200) {
@@ -201,9 +195,14 @@ class BinanceService {
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = jsonDecode(response.body);
       final List<dynamic> symbols = data['symbols'];
-      
+
       return symbols
-          .where((s) => s['status'] == 'TRADING' && s['contractType'] == 'PERPETUAL' && s['symbol'].toString().endsWith('USDT'))
+          .where(
+            (s) =>
+                s['status'] == 'TRADING' &&
+                s['contractType'] == 'PERPETUAL' &&
+                s['symbol'].toString().endsWith('USDT'),
+          )
           .map((s) => SymbolModel.fromJson(s))
           .toList();
     } else {
@@ -288,10 +287,10 @@ class BinanceService {
     final String signature = _generateSignature(queryString);
 
     final response = await http.get(
-      Uri.parse('$baseUrl/fapi/v1/userTrades?$queryString&signature=$signature'),
-      headers: {
-        'X-MBX-APIKEY': apiKey!,
-      },
+      Uri.parse(
+        '$baseUrl/fapi/v1/userTrades?$queryString&signature=$signature',
+      ),
+      headers: {'X-MBX-APIKEY': apiKey!},
     );
 
     if (response.statusCode == 200) {
@@ -349,22 +348,26 @@ class BinanceService {
     if (quantity != null) params['quantity'] = quantity.toString();
     if (triggerPrice != null) params['triggerPrice'] = triggerPrice.toString();
     if (price != null) params['price'] = price.toString();
-    if (positionSide != null) params['positionSide'] = positionSide.toUpperCase();
+    if (positionSide != null) {
+      params['positionSide'] = positionSide.toUpperCase();
+    }
     if (closePosition == true) params['closePosition'] = 'true';
     if (reduceOnly == true) params['reduceOnly'] = 'true';
     if (workingType != null) params['workingType'] = workingType.toUpperCase();
-    if (priceProtect != null) params['priceProtect'] = priceProtect.toUpperCase();
+    if (priceProtect != null) {
+      params['priceProtect'] = priceProtect.toUpperCase();
+    }
     if (callbackRate != null) params['callbackRate'] = callbackRate.toString();
-    if (activatePrice != null) params['activatePrice'] = activatePrice.toString();
+    if (activatePrice != null) {
+      params['activatePrice'] = activatePrice.toString();
+    }
 
     final String queryString = Uri(queryParameters: params).query;
     final String signature = _generateSignature(queryString);
 
     final response = await http.post(
       Uri.parse('$baseUrl/fapi/v1/algoOrder?$queryString&signature=$signature'),
-      headers: {
-        'X-MBX-APIKEY': apiKey!,
-      },
+      headers: {'X-MBX-APIKEY': apiKey!},
     );
 
     if (response.statusCode == 200) {

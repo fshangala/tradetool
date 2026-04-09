@@ -22,7 +22,11 @@ class StrategyListView extends StatelessWidget {
                 child: Consumer<StrategyViewModel>(
                   builder: (context, viewModel, child) {
                     if (viewModel.isLoading) {
-                      return const Center(child: CircularProgressIndicator(color: BinanceTheme.yellow));
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: BinanceTheme.yellow,
+                        ),
+                      );
                     }
 
                     if (viewModel.strategies.isEmpty) {
@@ -54,9 +58,7 @@ class StrategyListView extends StatelessWidget {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const StrategyEditView(),
-            ),
+            MaterialPageRoute(builder: (context) => const StrategyEditView()),
           );
         },
         child: const Icon(Icons.add, color: Colors.black),
@@ -86,14 +88,19 @@ class StrategyListView extends StatelessWidget {
           Consumer<StrategyViewModel>(
             builder: (context, viewModel, child) {
               return IconButton(
-                icon: viewModel.isLoading 
-                  ? const SizedBox(
-                      width: 20, 
-                      height: 20, 
-                      child: CircularProgressIndicator(color: BinanceTheme.yellow, strokeWidth: 2),
-                    )
-                  : const Icon(Icons.refresh, color: BinanceTheme.yellow),
-                onPressed: viewModel.isLoading ? null : () => viewModel.refresh(),
+                icon: viewModel.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: BinanceTheme.yellow,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Icon(Icons.refresh, color: BinanceTheme.yellow),
+                onPressed: viewModel.isLoading
+                    ? null
+                    : () => viewModel.refresh(),
               );
             },
           ),
@@ -102,7 +109,11 @@ class StrategyListView extends StatelessWidget {
     );
   }
 
-  Widget _buildStrategyCard(BuildContext context, Strategy strategy, StrategyViewModel viewModel) {
+  Widget _buildStrategyCard(
+    BuildContext context,
+    Strategy strategy,
+    StrategyViewModel viewModel,
+  ) {
     return Card(
       color: Colors.white.withValues(alpha: 0.05),
       margin: const EdgeInsets.only(bottom: 16),
@@ -147,21 +158,32 @@ class StrategyListView extends StatelessWidget {
                               const SizedBox(width: 8),
                               Text(
                                 'Success: ${((strategy.lastResult!.profitableTrades / (strategy.lastResult!.totalTrades > 0 ? strategy.lastResult!.totalTrades : 1)) * 100).toStringAsFixed(1)}%',
-                                style: const TextStyle(color: Colors.white54, fontSize: 10),
+                                style: const TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 10,
+                                ),
                               ),
                             ],
                           )
                         else
                           const Text(
                             'No evaluation yet',
-                            style: TextStyle(color: Colors.white24, fontSize: 10, fontStyle: FontStyle.italic),
+                            style: TextStyle(
+                              color: Colors.white24,
+                              fontSize: 10,
+                              fontStyle: FontStyle.italic,
+                            ),
                           ),
                       ],
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                    onPressed: () => _confirmDelete(context, strategy, viewModel),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: Colors.redAccent,
+                    ),
+                    onPressed: () =>
+                        _confirmDelete(context, strategy, viewModel),
                   ),
                 ],
               ),
@@ -172,7 +194,10 @@ class StrategyListView extends StatelessWidget {
                 const SizedBox(height: 8),
               ],
               if (strategy.shortEntry.conditions.isNotEmpty) ...[
-                _buildPhaseSummary('Short Entry', strategy.shortEntry.conditions),
+                _buildPhaseSummary(
+                  'Short Entry',
+                  strategy.shortEntry.conditions,
+                ),
                 _buildProtectionSummary(strategy.shortEntry),
                 const SizedBox(height: 8),
               ],
@@ -190,11 +215,17 @@ class StrategyListView extends StatelessWidget {
       children: [
         Text(
           '$title: ',
-          style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 12),
+          style: const TextStyle(
+            color: Colors.white70,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
         ),
         Expanded(
           child: Text(
-            conditions.isEmpty ? 'None' : conditions.map((c) => _conditionToString(c)).join(', '),
+            conditions.isEmpty
+                ? 'None'
+                : conditions.map((c) => _conditionToString(c)).join(', '),
             style: const TextStyle(color: Colors.white54, fontSize: 12),
             overflow: TextOverflow.ellipsis,
           ),
@@ -216,18 +247,25 @@ class StrategyListView extends StatelessWidget {
 
   String _conditionToString(Condition c) {
     final opStr = _opToString(c.op);
-    String leftSide = c.type == ConditionType.price ? 'Price' : c.indicatorName!;
+    String leftSide = c.type == ConditionType.price
+        ? 'Price'
+        : c.indicatorName!;
     String rightSide = c.targetIndicatorName ?? c.value.toString();
     return '$leftSide $opStr $rightSide';
   }
 
   String _opToString(Operator op) {
     switch (op) {
-      case Operator.greaterThan: return '>';
-      case Operator.lessThan: return '<';
-      case Operator.equal: return '==';
-      case Operator.crossesAbove: return '↑';
-      case Operator.crossesBelow: return '↓';
+      case Operator.greaterThan:
+        return '>';
+      case Operator.lessThan:
+        return '<';
+      case Operator.equal:
+        return '==';
+      case Operator.crossesAbove:
+        return '↑';
+      case Operator.crossesBelow:
+        return '↓';
     }
   }
 
@@ -243,14 +281,23 @@ class StrategyListView extends StatelessWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, Strategy strategy, StrategyViewModel viewModel) {
+  void _confirmDelete(
+    BuildContext context,
+    Strategy strategy,
+    StrategyViewModel viewModel,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
-        title: const Text('Delete Strategy', style: TextStyle(color: Colors.white)),
-        content: Text('Are you sure you want to delete "${strategy.name}"?', 
-          style: const TextStyle(color: Colors.white70)),
+        title: const Text(
+          'Delete Strategy',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Are you sure you want to delete "${strategy.name}"?',
+          style: const TextStyle(color: Colors.white70),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -261,7 +308,10 @@ class StrategyListView extends StatelessWidget {
               viewModel.deleteStrategy(strategy.id);
               Navigator.pop(context);
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.redAccent),
+            ),
           ),
         ],
       ),
