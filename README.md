@@ -19,6 +19,11 @@ This tool provides a streamlined, high-performance interface for futures traders
     - **Customizable Wallet Usage:** Allocate 1-80% of available wallet balance per strategy.
 - **Dashboard Automation:** Optimized for hands-free trading with automated strategy execution and a "Retry" mechanism for failed API actions.
 - **Algo Order Service:** Utilizes Binance's specialized Algo Order API for reliable automated protection.
+- **Strategy Evaluation (Backtesting):** Perform high-fidelity strategy simulations before going live.
+    - **Realistic Fees:** Simulates Binance VIP 0 Maker (0.02%) and Taker (0.05%) fees.
+    - **Leverage Support:** Backtest using 1x, 5x, 10x, or 20x leverage.
+    - **Historical Context:** Analyzes up to 500 historical candles with fully calculated technical indicators.
+    - **Detailed Analytics:** Real-time tracking of Gross Profit, Gross Loss, Fees, and final Net Earnings.
 - **Instant Position Exit:** Quick "Close Position" button to exit trades at market price with a single confirmation.
 - **Trade History & Analytics:** Comprehensive history of your trades with detailed breakdowns of price, quantity, commission, and realized PnL.
 - **Personalized Symbol List:** Manage your own trading pairs list in Settings; fetch all available perpetual pairs and save your favorites.

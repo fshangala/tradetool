@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/strategy.dart';
 import '../viewmodels/strategy_viewmodel.dart';
+import '../viewmodels/settings_viewmodel.dart';
+import '../viewmodels/strategy_evaluation_viewmodel.dart';
 import '../core/theme.dart';
 
 class StrategyEditView extends StatefulWidget {
@@ -140,8 +142,28 @@ class _StrategyEditViewState extends State<StrategyEditView> {
             _buildExitSection('LONG EXIT', _longExitConditions),
             const SizedBox(height: 16),
             _buildExitSection('SHORT EXIT', _shortExitConditions),
+            const SizedBox(height: 32),
+            _buildEvaluateButton(),
             const SizedBox(height: 80),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEvaluateButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ElevatedButton.icon(
+        onPressed: () => _showEvaluationModal(context),
+        icon: const Icon(Icons.analytics_outlined),
+        label: const Text('Evaluate Strategy'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: BinanceTheme.yellow.withValues(alpha: 0.1),
+          foregroundColor: BinanceTheme.yellow,
+          side: const BorderSide(color: BinanceTheme.yellow),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );
@@ -336,6 +358,275 @@ class _StrategyEditViewState extends State<StrategyEditView> {
       case Operator.crossesAbove: return '↑';
       case Operator.crossesBelow: return '↓';
     }
+  }
+
+  void _showEvaluationModal(BuildContext context) {
+    final settings = context.read<SettingsViewModel>();
+    String selectedSymbol = settings.selectedSymbols.isNotEmpty ? settings.selectedSymbols.first : 'BTCUSDT';
+    String selectedInterval = '1h';
+    int selectedLeverage = 10;
+    final intervals = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w', '1M'];
+    final leverages = [1, 5, 10, 20];
+    final capitalController = TextEditingController(text: '1000');
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          height: MediaQuery.of(context).size.height * 0.85,
+          decoration: BoxDecoration(
+            color: Colors.grey[900],
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Consumer<StrategyEvaluationViewModel>(
+            builder: (context, evalViewModel, child) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Strategy Evaluation',
+                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white54),
+                        onPressed: () {
+                          evalViewModel.reset();
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildModalDropdown(
+                                  'Symbol',
+                                  selectedSymbol,
+                                  settings.selectedSymbols,
+                                  (val) => setModalState(() => selectedSymbol = val!),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _buildModalDropdown(
+                                  'Interval',
+                                  selectedInterval,
+                                  intervals,
+                                  (val) => setModalState(() => selectedInterval = val!),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Initial Capital (USDT)', style: TextStyle(color: BinanceTheme.yellow, fontSize: 11)),
+                                    TextField(
+                                      controller: capitalController,
+                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                                      decoration: const InputDecoration(
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.symmetric(vertical: 8),
+                                        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                flex: 1,
+                                child: _buildModalDropdown(
+                                  'Leverage',
+                                  '${selectedLeverage}x',
+                                  leverages.map((l) => '${l}x').toList(),
+                                  (val) => setModalState(() => selectedLeverage = int.parse(val!.replaceAll('x', ''))),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 32),
+                          if (evalViewModel.isEvaluating || evalViewModel.progress > 0) ...[
+                            const Text('Progress', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                            const SizedBox(height: 8),
+                            LinearProgressIndicator(
+                              value: evalViewModel.progress,
+                              backgroundColor: Colors.white10,
+                              valueColor: const AlwaysStoppedAnimation<Color>(BinanceTheme.yellow),
+                            ),
+                            const SizedBox(height: 24),
+                            _buildResultGrid(evalViewModel),
+                          ],
+                          if (evalViewModel.error != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 16),
+                              child: Text(
+                                evalViewModel.error!,
+                                style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                              ),
+                            ),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: evalViewModel.isEvaluating
+                          ? null
+                          : () {
+                              final strategy = Strategy(
+                                id: _id,
+                                name: _nameController.text,
+                                walletPercentage: _walletPercentage,
+                                longEntry: EntrySettings(
+                                  conditions: _longEntryConditions,
+                                  useProtection: _longUseProtection,
+                                  takeProfit: _longTP,
+                                  stopLoss: _longSL,
+                                ),
+                                shortEntry: EntrySettings(
+                                  conditions: _shortEntryConditions,
+                                  useProtection: _shortUseProtection,
+                                  takeProfit: _shortTP,
+                                  stopLoss: _shortSL,
+                                ),
+                                longExit: StrategyPhase(conditions: _longExitConditions),
+                                shortExit: StrategyPhase(conditions: _shortExitConditions),
+                              );
+                              final capital = double.tryParse(capitalController.text) ?? 1000.0;
+                              evalViewModel.evaluate(strategy, selectedSymbol, selectedInterval, capital, selectedLeverage);
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: BinanceTheme.yellow,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        disabledBackgroundColor: Colors.white10,
+                      ),
+                      child: Text(evalViewModel.isEvaluating ? 'Evaluating...' : 'Start Evaluation'),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModalDropdown(String label, String value, List<String> items, Function(String?) onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: BinanceTheme.yellow, fontSize: 11)),
+        DropdownButton<String>(
+          value: value,
+          isExpanded: true,
+          dropdownColor: Colors.grey[850],
+          style: const TextStyle(color: Colors.white, fontSize: 14),
+          underline: Container(height: 1, color: Colors.white24),
+          items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResultGrid(StrategyEvaluationViewModel viewModel) {
+    return Column(
+      children: [
+        GridView.count(
+          shrinkWrap: true,
+          crossAxisCount: 3,
+          childAspectRatio: 1.5,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            _buildResultItem('Total Trades', viewModel.totalTrades.toString(), Colors.white),
+            _buildResultItem('Profitable', viewModel.profitableTrades.toString(), Colors.greenAccent),
+            _buildResultItem('Losses', viewModel.lossTrades.toString(), Colors.redAccent),
+          ],
+        ),
+        const SizedBox(height: 10),
+        GridView.count(
+          shrinkWrap: true,
+          crossAxisCount: 3,
+          childAspectRatio: 1.5,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            _buildResultItem('Gross Profit', '+${viewModel.totalGrossProfitUsdt.toStringAsFixed(2)}', Colors.greenAccent),
+            _buildResultItem('Gross Loss', viewModel.totalGrossLossUsdt.toStringAsFixed(2), Colors.redAccent),
+            _buildResultItem('Total Fees', '-${viewModel.totalFeesUsdt.toStringAsFixed(2)}', Colors.orangeAccent),
+          ],
+        ),
+        const SizedBox(height: 10),
+        GridView.count(
+          shrinkWrap: true,
+          crossAxisCount: 3,
+          childAspectRatio: 1.5,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            const SizedBox.shrink(),
+            _buildResultItem('Net Earnings', viewModel.totalEarnings.toStringAsFixed(2), viewModel.totalEarnings >= 0 ? Colors.greenAccent : Colors.redAccent, isBold: true),
+            const SizedBox.shrink(),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResultItem(String label, String value, Color color, {bool isBold = false}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 10), textAlign: TextAlign.center),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value, 
+              style: TextStyle(
+                color: color, 
+                fontSize: 14, 
+                fontWeight: isBold ? FontWeight.bold : FontWeight.normal
+              )
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showAddConditionDialog(List<Condition> conditions) {

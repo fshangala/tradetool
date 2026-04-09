@@ -6,6 +6,8 @@ import 'viewmodels/dashboard_viewmodel.dart';
 import 'viewmodels/notification_viewmodel.dart';
 import 'viewmodels/trades_viewmodel.dart';
 import 'viewmodels/strategy_viewmodel.dart';
+import 'viewmodels/strategy_evaluation_viewmodel.dart';
+import 'services/binance_service.dart';
 import 'views/settings_view.dart';
 import 'views/dashboard_view.dart';
 import 'views/profile_view.dart';
@@ -60,6 +62,27 @@ class BinanceTradeApp extends StatelessWidget {
                 settingsViewModel: settings,
                 notificationViewModel: notification,
               ),
+        ),
+        ChangeNotifierProxyProvider<SettingsViewModel, StrategyEvaluationViewModel>(
+          create: (context) {
+            final settings = context.read<SettingsViewModel>();
+            return StrategyEvaluationViewModel(
+              binanceService: BinanceService(
+                isTestnet: settings.isTestnet,
+                apiKey: settings.isTestnet ? settings.testnetApiKey : settings.liveApiKey,
+                secretKey: settings.isTestnet ? settings.testnetSecretKey : settings.liveSecretKey,
+              ),
+            );
+          },
+          update: (context, settings, previous) {
+            return StrategyEvaluationViewModel(
+              binanceService: BinanceService(
+                isTestnet: settings.isTestnet,
+                apiKey: settings.isTestnet ? settings.testnetApiKey : settings.liveApiKey,
+                secretKey: settings.isTestnet ? settings.testnetSecretKey : settings.liveSecretKey,
+              ),
+            );
+          },
         ),
       ],
       child: MaterialApp(

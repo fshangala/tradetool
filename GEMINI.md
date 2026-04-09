@@ -60,11 +60,15 @@
     - **RSI Reversion Strategy:** Seeded a default "RSI Reversion" strategy utilizing closed-candle data (Entry: RSI < 30 / > 70, Exit: RSI 50).
 - **Algo Order Support:** Integrated Binance's specialized Algo Order Service (`/fapi/v1/algoOrder`) for automated protection orders.
 - **Dashboard Refinement:** Removed manual trade buttons to focus on automated execution; added a dynamic **Retry** button for failed strategy actions (Entry, Protection, or Exit).
-- **Screen Management:** Integrated `wakelock_plus` to keep the screen on while automated strategies are active.
+- **Strategy Evaluation (Backtesting):** Implemented a comprehensive backtesting engine with realistic simulation.
+    - **Historical Data:** Fetches and processes 500 candles for analysis, starting after 100 candles to allow indicator stabilization.
+    - **Financial Simulation:** Accounts for Binance Futures VIP 0 fees (Maker 0.02%, Taker 0.05%) and supports 1x, 5x, 10x, and 20x leverage.
+    - **Performance Metrics:** Tracks Gross Profit, Gross Loss, Total Fees, and calculates Net Earnings (PnL - Fees).
+    - **Streaming Progress:** Asynchronous evaluation with a real-time progress bar for a smooth UI experience.
+    - **Scrollable Modal:** Dedicated evaluation interface with customizable initial capital, symbol, and interval selection.
 
 ## Planned Features
 - **Enhanced Orders:** Support for Limit orders, Stop Loss, and Take Profit.
-- **Backtesting:** Implement a strategy backtesting simulator.
 
 ## Key Files
 - `lib/main.dart`: Entry point with route configuration and top-level providers.
