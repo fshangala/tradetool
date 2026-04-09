@@ -55,6 +55,7 @@
     - **Symbol Metadata & Precision:** Implemented `SymbolModel` to store exchange-provided `quantityPrecision` and `pricePrecision`.
     - **Dynamic Precision Handling:** Orders (Market and Protection) now dynamically use the correct precision for quantities and trigger prices based on the trading pair's metadata, replacing hardcoded defaults.
     - **Enhanced Pair Management:** Improved symbol selection UI with search filtering and precision information visibility.
+    - **Navigation Drawer:** Implemented a navigation drawer on the Dashboard to declutter the AppBar and centralize access to Strategies, History, Profile, and Settings.
     - **Historical Comparisons:** Added `useLastClosedData` flag to conditions, allowing evaluation using price and indicator values from the last closed candle (regardless of the current candle's live movement).
     - **RSI Reversion Strategy:** Seeded a default "RSI Reversion" strategy utilizing closed-candle data (Entry: RSI < 30 / > 70, Exit: RSI 50).
 - **Algo Order Support:** Integrated Binance's specialized Algo Order Service (`/fapi/v1/algoOrder`) for automated protection orders.

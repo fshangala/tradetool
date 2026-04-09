@@ -21,26 +21,89 @@ class DashboardView extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.psychology, color: BinanceTheme.yellow),
-            onPressed: () => Navigator.pushNamed(context, '/strategies'),
-          ),
-          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: viewModel.refresh,
           ),
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () => Navigator.pushNamed(context, '/trades'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () => Navigator.pushNamed(context, '/profile'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => Navigator.pushNamed(context, '/settings'),
-          ),
         ],
+      ),
+      drawer: Drawer(
+        backgroundColor: BinanceTheme.surfaceColor,
+        child: Column(
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(
+                gradient: BinanceTheme.darkGradient,
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/icon.png',
+                      height: 60,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.show_chart, color: BinanceTheme.yellow, size: 60),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'TradeTool',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            _buildDrawerItem(
+              context,
+              icon: Icons.dashboard,
+              label: 'Dashboard',
+              onTap: () => Navigator.pop(context),
+              selected: true,
+            ),
+            _buildDrawerItem(
+              context,
+              icon: Icons.psychology,
+              label: 'Strategies',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/strategies');
+              },
+            ),
+            _buildDrawerItem(
+              context,
+              icon: Icons.history,
+              label: 'Trade History',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/trades');
+              },
+            ),
+            _buildDrawerItem(
+              context,
+              icon: Icons.person,
+              label: 'Profile',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/profile');
+              },
+            ),
+            const Divider(color: Colors.white12),
+            _buildDrawerItem(
+              context,
+              icon: Icons.settings,
+              label: 'Settings',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/settings');
+              },
+            ),
+          ],
+        ),
       ),
       body: Stack(
         children: [
@@ -514,6 +577,34 @@ class DashboardView extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDrawerItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool selected = false,
+  }) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: selected ? BinanceTheme.yellow : BinanceTheme.secondaryTextColor,
+      ),
+      title: Text(
+        label,
+        style: TextStyle(
+          color: selected ? BinanceTheme.yellow : Colors.white,
+          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      selected: selected,
+      onTap: onTap,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
     );
   }
 }
