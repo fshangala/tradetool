@@ -559,8 +559,12 @@ class DashboardViewModel extends ChangeNotifier {
     final position = _positions.firstWhereOrNull((p) => p.symbol == symbol);
     if (position == null) {
       // Position was closed elsewhere (e.g. manually)
-      _activeStrategyPhases[symbol] = 'entry';
-      _failedActions.remove(symbol);
+      if (!strategy.autoContinue) {
+        setStrategyForSymbol(symbol, null);
+      } else {
+        _activeStrategyPhases[symbol] = 'entry';
+        _failedActions.remove(symbol);
+      }
       notifyListeners();
       return;
     }
@@ -577,8 +581,13 @@ class DashboardViewModel extends ChangeNotifier {
         notifyListeners();
 
         await closePosition(position);
-        _activeStrategyPhases[symbol] = 'entry';
-        _failedActions.remove(symbol);
+
+        if (!strategy.autoContinue) {
+          setStrategyForSymbol(symbol, null);
+        } else {
+          _activeStrategyPhases[symbol] = 'entry';
+          _failedActions.remove(symbol);
+        }
         notifyListeners();
       } catch (e) {
         logger.e('Exit execution failed: $e');

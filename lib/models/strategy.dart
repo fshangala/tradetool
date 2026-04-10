@@ -387,6 +387,7 @@ class EvaluationResult {
 class Strategy {
   final String id;
   final String name;
+  final bool autoContinue;
   final double walletPercentage;
   final EntrySettings longEntry;
   final EntrySettings shortEntry;
@@ -397,6 +398,7 @@ class Strategy {
   Strategy({
     required this.id,
     required this.name,
+    this.autoContinue = true,
     this.walletPercentage = 40.0,
     required this.longEntry,
     required this.shortEntry,
@@ -409,6 +411,7 @@ class Strategy {
     return Strategy(
       id: json['id'],
       name: json['name'],
+      autoContinue: json['autoContinue'] ?? true,
       walletPercentage: (json['walletPercentage'] as num?)?.toDouble() ?? 40.0,
       longEntry: EntrySettings.fromJson(json['longEntry']),
       shortEntry: EntrySettings.fromJson(json['shortEntry']),
@@ -424,6 +427,7 @@ class Strategy {
     return {
       'id': id,
       'name': name,
+      'autoContinue': autoContinue,
       'walletPercentage': walletPercentage,
       'longEntry': longEntry.toJson(),
       'shortEntry': shortEntry.toJson(),
@@ -435,6 +439,7 @@ class Strategy {
 
   Strategy copyWith({
     String? name,
+    bool? autoContinue,
     double? walletPercentage,
     EntrySettings? longEntry,
     EntrySettings? shortEntry,
@@ -445,6 +450,7 @@ class Strategy {
     return Strategy(
       id: id,
       name: name ?? this.name,
+      autoContinue: autoContinue ?? this.autoContinue,
       walletPercentage: walletPercentage ?? this.walletPercentage,
       longEntry: longEntry ?? this.longEntry,
       shortEntry: shortEntry ?? this.shortEntry,

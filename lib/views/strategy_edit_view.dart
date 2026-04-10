@@ -21,6 +21,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
   final _formKey = GlobalKey<FormState>();
   late String _id;
   late TextEditingController _nameController;
+  late bool _autoContinue;
   late double _walletPercentage;
 
   // Long Entry Settings
@@ -49,6 +50,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     final s = widget.strategy;
     _id = s?.id ?? const Uuid().v4();
     _nameController = TextEditingController(text: s?.name ?? '');
+    _autoContinue = s?.autoContinue ?? true;
     _walletPercentage = s?.walletPercentage ?? 40.0;
 
     // Long Entry
@@ -119,6 +121,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
       final strategy = Strategy(
         id: _id,
         name: _nameController.text,
+        autoContinue: _autoContinue,
         walletPercentage: _walletPercentage,
         longEntry: EntrySettings(
           groups: _longEntryGroups,
@@ -508,6 +511,21 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                 if (val <= 0 || val > 80) return 'Must be between 1 and 80';
                 return null;
               },
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text(
+                'Auto Continue',
+                style: TextStyle(color: Colors.white, fontSize: 14),
+              ),
+              subtitle: const Text(
+                'Automatically search for next entry after trade exit',
+                style: TextStyle(color: Colors.white38, fontSize: 11),
+              ),
+              value: _autoContinue,
+              activeColor: BinanceTheme.yellow,
+              onChanged: (val) => setState(() => _autoContinue = val),
             ),
           ],
         ),
@@ -1044,6 +1062,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                               final strategy = Strategy(
                                 id: _id,
                                 name: _nameController.text,
+                                autoContinue: _autoContinue,
                                 walletPercentage: _walletPercentage,
                                 longEntry: EntrySettings(
                                   groups: _longEntryGroups,

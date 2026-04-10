@@ -19,6 +19,7 @@ This tool provides a streamlined, high-performance interface for futures traders
     - **Accurate Evaluation:** Precise technical indicator calculation using specialized data lists (e.g., `emaValueList`).
     - **Dynamic Comparisons:** Compare price or indicators against other indicators (e.g., "Price < DN" or "DIF > DEA").
     - **Signed Value Inputs:** Full support for negative numbers in condition thresholds (e.g., comparing MACD Hist < -5.0).
+    - **Auto Continue Toggle:** Choose whether a strategy should persist and search for the next trade after an exit, or automatically remove itself to return to manual mode.
     - **Customizable Wallet Usage:** Allocate 1-80% of available wallet balance per strategy.
 - **Dashboard Automation:** Optimized for hands-free trading with automated strategy execution and a "Retry" mechanism for failed API actions.
 - **Algo Order Service:** Utilizes Binance's specialized Algo Order API for reliable automated protection.
