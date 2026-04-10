@@ -188,21 +188,18 @@ class StrategyListView extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              if (strategy.longEntry.conditions.isNotEmpty) ...[
-                _buildPhaseSummary('Long Entry', strategy.longEntry.conditions),
+              if (_getConditionCount(strategy.longEntry.groups) > 0) ...[
+                _buildPhaseSummary('Long Entry', strategy.longEntry.groups),
                 _buildProtectionSummary(strategy.longEntry),
                 const SizedBox(height: 8),
               ],
-              if (strategy.shortEntry.conditions.isNotEmpty) ...[
-                _buildPhaseSummary(
-                  'Short Entry',
-                  strategy.shortEntry.conditions,
-                ),
+              if (_getConditionCount(strategy.shortEntry.groups) > 0) ...[
+                _buildPhaseSummary('Short Entry', strategy.shortEntry.groups),
                 _buildProtectionSummary(strategy.shortEntry),
                 const SizedBox(height: 8),
               ],
-              _buildPhaseSummary('Long Exit', strategy.longExit.conditions),
-              _buildPhaseSummary('Short Exit', strategy.shortExit.conditions),
+              _buildPhaseSummary('Long Exit', strategy.longExit.groups),
+              _buildPhaseSummary('Short Exit', strategy.shortExit.groups),
             ],
           ),
         ),
@@ -210,7 +207,14 @@ class StrategyListView extends StatelessWidget {
     );
   }
 
-  Widget _buildPhaseSummary(String title, List<Condition> conditions) {
+  int _getConditionCount(List<ConditionGroup> groups) {
+    return groups.fold(0, (sum, group) => sum + group.conditions.length);
+  }
+
+  Widget _buildPhaseSummary(String title, List<ConditionGroup> groups) {
+    final count = _getConditionCount(groups);
+    final allConditions = groups.expand((g) => g.conditions).toList();
+
     return Row(
       children: [
         Text(
@@ -223,9 +227,9 @@ class StrategyListView extends StatelessWidget {
         ),
         Expanded(
           child: Text(
-            conditions.isEmpty
+            count == 0
                 ? 'None'
-                : conditions.map((c) => _conditionToString(c)).join(', '),
+                : allConditions.map((c) => _conditionToString(c)).join(', '),
             style: const TextStyle(color: Colors.white54, fontSize: 12),
             overflow: TextOverflow.ellipsis,
           ),

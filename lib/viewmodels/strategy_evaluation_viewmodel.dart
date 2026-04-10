@@ -125,12 +125,14 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
         if (currentPosition == 'NONE') {
           // Check for Entry
           final longMet = _evaluatePhase(
-            strategy.longEntry.conditions,
+            strategy.longEntry.groups,
             subList,
+            strategy.longEntry.operator,
           );
           final shortMet = _evaluatePhase(
-            strategy.shortEntry.conditions,
+            strategy.shortEntry.groups,
             subList,
+            strategy.shortEntry.operator,
           );
 
           if (longMet) {
@@ -144,7 +146,11 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
           }
         } else if (currentPosition == 'LONG') {
           // Check for Exit or Protection
-          bool exitMet = _evaluatePhase(strategy.longExit.conditions, subList);
+          bool exitMet = _evaluatePhase(
+            strategy.longExit.groups,
+            subList,
+            strategy.longExit.operator,
+          );
 
           // Simulate Protection
           if (strategy.longEntry.useProtection) {
@@ -191,7 +197,11 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
           }
         } else if (currentPosition == 'SHORT') {
           // Check for Exit or Protection
-          bool exitMet = _evaluatePhase(strategy.shortExit.conditions, subList);
+          bool exitMet = _evaluatePhase(
+            strategy.shortExit.groups,
+            subList,
+            strategy.shortExit.operator,
+          );
 
           // Simulate Protection
           if (strategy.shortEntry.useProtection) {
@@ -373,12 +383,42 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
     );
   }
 
-  bool _evaluatePhase(List<Condition> conditions, List<KLineEntity> data) {
-    if (conditions.isEmpty) return false;
-    for (var condition in conditions) {
-      if (!_evaluateCondition(condition, data)) return false;
+  bool _evaluatePhase(
+    List<ConditionGroup> groups,
+    List<KLineEntity> data,
+    String outerOp,
+  ) {
+    if (groups.isEmpty) return false;
+
+    if (outerOp == 'AND') {
+      for (var group in groups) {
+        if (!_evaluateGroup(group, data)) return false;
+      }
+      return true;
+    } else {
+      // OR
+      for (var group in groups) {
+        if (_evaluateGroup(group, data)) return true;
+      }
+      return false;
     }
-    return true;
+  }
+
+  bool _evaluateGroup(ConditionGroup group, List<KLineEntity> data) {
+    if (group.conditions.isEmpty) return true; // Empty group is true
+
+    if (group.operator == 'AND') {
+      for (var condition in group.conditions) {
+        if (!_evaluateCondition(condition, data)) return false;
+      }
+      return true;
+    } else {
+      // OR
+      for (var condition in group.conditions) {
+        if (_evaluateCondition(condition, data)) return true;
+      }
+      return false;
+    }
   }
 
   bool _evaluateCondition(Condition condition, List<KLineEntity> data) {

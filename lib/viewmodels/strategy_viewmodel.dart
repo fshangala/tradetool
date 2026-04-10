@@ -52,13 +52,18 @@ class StrategyViewModel extends ChangeNotifier {
       name: 'RSI Reversion',
       walletPercentage: 40.0,
       longEntry: EntrySettings(
-        conditions: [
-          Condition(
-            type: ConditionType.indicator,
-            indicatorName: 'RSI',
-            op: Operator.lessThan,
-            value: 30,
-            useLastClosedData: true,
+        groups: [
+          ConditionGroup(
+            id: const Uuid().v4(),
+            conditions: [
+              Condition(
+                type: ConditionType.indicator,
+                indicatorName: 'RSI',
+                op: Operator.lessThan,
+                value: 30,
+                useLastClosedData: true,
+              ),
+            ],
           ),
         ],
         useProtection: true,
@@ -66,13 +71,18 @@ class StrategyViewModel extends ChangeNotifier {
         stopLoss: 1.0,
       ),
       shortEntry: EntrySettings(
-        conditions: [
-          Condition(
-            type: ConditionType.indicator,
-            indicatorName: 'RSI',
-            op: Operator.greaterThan,
-            value: 70,
-            useLastClosedData: true,
+        groups: [
+          ConditionGroup(
+            id: const Uuid().v4(),
+            conditions: [
+              Condition(
+                type: ConditionType.indicator,
+                indicatorName: 'RSI',
+                op: Operator.greaterThan,
+                value: 70,
+                useLastClosedData: true,
+              ),
+            ],
           ),
         ],
         useProtection: true,
@@ -80,24 +90,34 @@ class StrategyViewModel extends ChangeNotifier {
         stopLoss: 1.0,
       ),
       longExit: StrategyPhase(
-        conditions: [
-          Condition(
-            type: ConditionType.indicator,
-            indicatorName: 'RSI',
-            op: Operator.greaterThan,
-            value: 50,
-            useLastClosedData: true,
+        groups: [
+          ConditionGroup(
+            id: const Uuid().v4(),
+            conditions: [
+              Condition(
+                type: ConditionType.indicator,
+                indicatorName: 'RSI',
+                op: Operator.greaterThan,
+                value: 50,
+                useLastClosedData: true,
+              ),
+            ],
           ),
         ],
       ),
       shortExit: StrategyPhase(
-        conditions: [
-          Condition(
-            type: ConditionType.indicator,
-            indicatorName: 'RSI',
-            op: Operator.lessThan,
-            value: 50,
-            useLastClosedData: true,
+        groups: [
+          ConditionGroup(
+            id: const Uuid().v4(),
+            conditions: [
+              Condition(
+                type: ConditionType.indicator,
+                indicatorName: 'RSI',
+                op: Operator.lessThan,
+                value: 50,
+                useLastClosedData: true,
+              ),
+            ],
           ),
         ],
       ),

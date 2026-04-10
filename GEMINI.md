@@ -58,6 +58,11 @@
     - **Navigation Drawer:** Implemented a navigation drawer on the Dashboard to declutter the AppBar and centralize access to Strategies, History, Profile, and Settings.
     - **Historical Comparisons:** Added `useLastClosedData` flag to conditions, allowing evaluation using price and indicator values from the last closed candle (regardless of the current candle's live movement).
     - **RSI Reversion Strategy:** Seeded a default "RSI Reversion" strategy utilizing closed-candle data (Entry: RSI < 30 / > 70, Exit: RSI 50).
+- **Condition Groups & Nested Logic:** Introduced a powerful two-level logical hierarchy for strategy triggers.
+    - **Grouped Conditions:** Support for multiple `ConditionGroup` objects per phase, each with its own internal **AND/OR** operator.
+    - **Phase-Level Operators:** Combine multiple groups using a secondary phase-level **AND/OR** operator (e.g., `(A OR B) AND (C OR D)`).
+    - **Backward Compatibility:** Robust migration layer in data models to wrap legacy single-list conditions into groups.
+    - **Signed Input Support:** Updated numeric fields in UI to allow negative values, enabling comparisons against negative indicator levels (e.g., MACD Histogram < -10.0).
 - **Algo Order Support:** Integrated Binance's specialized Algo Order Service (`/fapi/v1/algoOrder`) for automated protection orders.
 - **Dashboard Refinement:** Removed manual trade buttons to focus on automated execution; added a dynamic **Retry** button for failed strategy actions (Entry, Protection, or Exit).
 - **Strategy Evaluation (Backtesting):** Implemented a comprehensive backtesting engine with realistic simulation.
@@ -66,6 +71,7 @@
     - **Performance Metrics:** Tracks Gross Profit, Gross Loss, Total Fees, and calculates Net Earnings (PnL - Fees).
     - **Streaming Progress:** Asynchronous evaluation with a real-time progress bar for a smooth UI experience.
     - **Evaluation Persistence:** Automatically saves the latest evaluation results, input parameters, and a performance-based **5-star rating** to each strategy.
+    - **Detailed Backtesting History:** Captures full entry/exit candle data (OHLCV + indicators) for every simulated trade, with side-by-side visual comparison UI in the strategy list.
     - **Enhanced Strategy List:** Displays star ratings and success rates (`profitableTrades / totalTrades`) directly on the main strategy list for at-a-glance performance monitoring.
 
 ## Planned Features

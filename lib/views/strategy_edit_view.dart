@@ -24,20 +24,24 @@ class _StrategyEditViewState extends State<StrategyEditView> {
   late double _walletPercentage;
 
   // Long Entry Settings
-  late List<Condition> _longEntryConditions;
+  late List<ConditionGroup> _longEntryGroups;
+  late String _longEntryOperator;
   late bool _longUseProtection;
   late double _longTP;
   late double _longSL;
 
   // Short Entry Settings
-  late List<Condition> _shortEntryConditions;
+  late List<ConditionGroup> _shortEntryGroups;
+  late String _shortEntryOperator;
   late bool _shortUseProtection;
   late double _shortTP;
   late double _shortSL;
 
   // Exit Phases
-  late List<Condition> _longExitConditions;
-  late List<Condition> _shortExitConditions;
+  late List<ConditionGroup> _longExitGroups;
+  late String _longExitOperator;
+  late List<ConditionGroup> _shortExitGroups;
+  late String _shortExitOperator;
 
   @override
   void initState() {
@@ -48,20 +52,45 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     _walletPercentage = s?.walletPercentage ?? 40.0;
 
     // Long Entry
-    _longEntryConditions = List.from(s?.longEntry.conditions ?? []);
+    _longEntryGroups = _cloneGroups(s?.longEntry.groups ?? []);
+    if (_longEntryGroups.isEmpty) {
+      _longEntryGroups.add(ConditionGroup(id: const Uuid().v4(), conditions: []));
+    }
+    _longEntryOperator = s?.longEntry.operator ?? 'AND';
     _longUseProtection = s?.longEntry.useProtection ?? false;
     _longTP = s?.longEntry.takeProfit ?? 1.0;
     _longSL = s?.longEntry.stopLoss ?? 1.0;
 
     // Short Entry
-    _shortEntryConditions = List.from(s?.shortEntry.conditions ?? []);
+    _shortEntryGroups = _cloneGroups(s?.shortEntry.groups ?? []);
+    if (_shortEntryGroups.isEmpty) {
+      _shortEntryGroups.add(ConditionGroup(id: const Uuid().v4(), conditions: []));
+    }
+    _shortEntryOperator = s?.shortEntry.operator ?? 'AND';
     _shortUseProtection = s?.shortEntry.useProtection ?? false;
     _shortTP = s?.shortEntry.takeProfit ?? 1.0;
     _shortSL = s?.shortEntry.stopLoss ?? 1.0;
 
     // Exits
-    _longExitConditions = List.from(s?.longExit.conditions ?? []);
-    _shortExitConditions = List.from(s?.shortExit.conditions ?? []);
+    _longExitGroups = _cloneGroups(s?.longExit.groups ?? []);
+    if (_longExitGroups.isEmpty) {
+      _longExitGroups.add(ConditionGroup(id: const Uuid().v4(), conditions: []));
+    }
+    _longExitOperator = s?.longExit.operator ?? 'AND';
+
+    _shortExitGroups = _cloneGroups(s?.shortExit.groups ?? []);
+    if (_shortExitGroups.isEmpty) {
+      _shortExitGroups.add(ConditionGroup(id: const Uuid().v4(), conditions: []));
+    }
+    _shortExitOperator = s?.shortExit.operator ?? 'AND';
+  }
+
+  List<ConditionGroup> _cloneGroups(List<ConditionGroup> original) {
+    return original.map((g) => ConditionGroup(
+      id: g.id,
+      conditions: List.from(g.conditions),
+      operator: g.operator,
+    )).toList();
   }
 
   @override
@@ -72,7 +101,11 @@ class _StrategyEditViewState extends State<StrategyEditView> {
 
   void _save() {
     if (_formKey.currentState!.validate()) {
-      if (_longEntryConditions.isEmpty && _shortEntryConditions.isEmpty) {
+      bool hasConditions = false;
+      if (_longEntryGroups.any((g) => g.conditions.isNotEmpty)) hasConditions = true;
+      if (_shortEntryGroups.any((g) => g.conditions.isNotEmpty)) hasConditions = true;
+
+      if (!hasConditions) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -88,19 +121,21 @@ class _StrategyEditViewState extends State<StrategyEditView> {
         name: _nameController.text,
         walletPercentage: _walletPercentage,
         longEntry: EntrySettings(
-          conditions: _longEntryConditions,
+          groups: _longEntryGroups,
+          operator: _longEntryOperator,
           useProtection: _longUseProtection,
           takeProfit: _longTP,
           stopLoss: _longSL,
         ),
         shortEntry: EntrySettings(
-          conditions: _shortEntryConditions,
+          groups: _shortEntryGroups,
+          operator: _shortEntryOperator,
           useProtection: _shortUseProtection,
           takeProfit: _shortTP,
           stopLoss: _shortSL,
         ),
-        longExit: StrategyPhase(conditions: _longExitConditions),
-        shortExit: StrategyPhase(conditions: _shortExitConditions),
+        longExit: StrategyPhase(groups: _longExitGroups, operator: _longExitOperator),
+        shortExit: StrategyPhase(groups: _shortExitGroups, operator: _shortExitOperator),
       );
 
       final viewModel = Provider.of<StrategyViewModel>(context, listen: false);
@@ -133,10 +168,10 @@ class _StrategyEditViewState extends State<StrategyEditView> {
               Strategy(
                 id: _id,
                 name: _nameController.text,
-                longEntry: EntrySettings(conditions: _longEntryConditions),
-                shortEntry: EntrySettings(conditions: _shortEntryConditions),
-                longExit: StrategyPhase(conditions: _longExitConditions),
-                shortExit: StrategyPhase(conditions: _shortExitConditions),
+                longEntry: EntrySettings(groups: _longEntryGroups),
+                shortEntry: EntrySettings(groups: _shortEntryGroups),
+                longExit: StrategyPhase(groups: _longExitGroups),
+                shortExit: StrategyPhase(groups: _shortExitGroups),
               );
 
           return Form(
@@ -146,31 +181,49 @@ class _StrategyEditViewState extends State<StrategyEditView> {
               children: [
                 _buildGeneralSection(),
                 const SizedBox(height: 24),
-                _buildEntrySection(
+                _buildPhaseSection(
                   'LONG ENTRY',
-                  _longEntryConditions,
-                  _longUseProtection,
-                  _longTP,
-                  _longSL,
-                  (val) => setState(() => _longUseProtection = val),
-                  (val) => setState(() => _longTP = val),
-                  (val) => setState(() => _longSL = val),
+                  _longEntryGroups,
+                  _longEntryOperator,
+                  (op) => setState(() => _longEntryOperator = op),
+                  extraSettings: _buildEntryProtectionSettings(
+                    _longUseProtection,
+                    _longTP,
+                    _longSL,
+                    (val) => setState(() => _longUseProtection = val),
+                    (val) => setState(() => _longTP = val),
+                    (val) => setState(() => _longSL = val),
+                  ),
                 ),
                 const SizedBox(height: 16),
-                _buildEntrySection(
+                _buildPhaseSection(
                   'SHORT ENTRY',
-                  _shortEntryConditions,
-                  _shortUseProtection,
-                  _shortTP,
-                  _shortSL,
-                  (val) => setState(() => _shortUseProtection = val),
-                  (val) => setState(() => _shortTP = val),
-                  (val) => setState(() => _shortSL = val),
+                  _shortEntryGroups,
+                  _shortEntryOperator,
+                  (op) => setState(() => _shortEntryOperator = op),
+                  extraSettings: _buildEntryProtectionSettings(
+                    _shortUseProtection,
+                    _shortTP,
+                    _shortSL,
+                    (val) => setState(() => _shortUseProtection = val),
+                    (val) => setState(() => _shortTP = val),
+                    (val) => setState(() => _shortSL = val),
+                  ),
                 ),
                 const SizedBox(height: 16),
-                _buildExitSection('LONG EXIT', _longExitConditions),
+                _buildPhaseSection(
+                  'LONG EXIT',
+                  _longExitGroups,
+                  _longExitOperator,
+                  (op) => setState(() => _longExitOperator = op),
+                ),
                 const SizedBox(height: 16),
-                _buildExitSection('SHORT EXIT', _shortExitConditions),
+                _buildPhaseSection(
+                  'SHORT EXIT',
+                  _shortExitGroups,
+                  _shortExitOperator,
+                  (op) => setState(() => _shortExitOperator = op),
+                ),
                 const SizedBox(height: 32),
                 _buildEvaluateButton(),
                 if (currentStrategy.lastResult != null) ...[
@@ -184,6 +237,342 @@ class _StrategyEditViewState extends State<StrategyEditView> {
         },
       ),
     );
+  }
+
+  Widget _buildPhaseSection(
+    String title,
+    List<ConditionGroup> groups,
+    String outerOperator,
+    Function(String) onOperatorChanged, {
+    Widget? extraSettings,
+  }) {
+    return Card(
+      color: Colors.white.withValues(alpha: 0.05),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildSectionTitle(title),
+                if (groups.length > 1)
+                  _buildOperatorToggle(outerOperator, onOperatorChanged),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...groups.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final group = entry.value;
+              return _buildGroupCard(groups, idx, group);
+            }),
+            const SizedBox(height: 8),
+            Center(
+              child: TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    groups.add(ConditionGroup(
+                      id: const Uuid().v4(),
+                      conditions: [],
+                    ));
+                  });
+                },
+                icon: const Icon(Icons.add_box_outlined, size: 18),
+                label: const Text('Add Group'),
+                style: TextButton.styleFrom(
+                  foregroundColor: BinanceTheme.yellow,
+                ),
+              ),
+            ),
+            if (extraSettings != null) ...[
+              const Divider(color: Colors.white10),
+              extraSettings,
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGroupCard(List<ConditionGroup> groups, int groupIdx, ConditionGroup group) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'GROUP ${groupIdx + 1}',
+                style: const TextStyle(
+                  color: Colors.white38,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              if (group.conditions.length > 1)
+                _buildOperatorToggle(group.operator, (op) {
+                  setState(() {
+                    groups[groupIdx] = group.copyWith(operator: op);
+                  });
+                }),
+              const SizedBox(width: 8),
+              if (groups.length > 1)
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.redAccent, size: 16),
+                  onPressed: () => setState(() => groups.removeAt(groupIdx)),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...group.conditions.asMap().entries.map((cEntry) {
+            final cIdx = cEntry.key;
+            final condition = cEntry.value;
+            return Container(
+              margin: const EdgeInsets.only(top: 4),
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ListTile(
+                dense: true,
+                visualDensity: VisualDensity.compact,
+                title: Text(
+                  _conditionToString(condition),
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 16),
+                  onPressed: () => setState(() => group.conditions.removeAt(cIdx)),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: () => _showAddConditionDialog(group.conditions),
+            icon: const Icon(Icons.add, color: BinanceTheme.yellow, size: 14),
+            label: const Text(
+              'Add Condition',
+              style: TextStyle(color: BinanceTheme.yellow, fontSize: 11),
+            ),
+            style: TextButton.styleFrom(padding: EdgeInsets.zero),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOperatorToggle(String current, Function(String) onChanged) {
+    return Container(
+      height: 24,
+      decoration: BoxDecoration(
+        color: Colors.black45,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildToggleItem('AND', current == 'AND', () => onChanged('AND')),
+          _buildToggleItem('OR', current == 'OR', () => onChanged('OR')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggleItem(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? BinanceTheme.yellow : Colors.transparent,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.black : Colors.white38,
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEntryProtectionSettings(
+    bool useProtection,
+    double tp,
+    double sl,
+    Function(bool) onProtectionChanged,
+    Function(double) onTPChanged,
+    Function(double) onSLChanged,
+  ) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            const Text(
+              'Auto Protection (TP/SL)',
+              style: TextStyle(color: Colors.white, fontSize: 14),
+            ),
+            const Spacer(),
+            Switch(
+              value: useProtection,
+              onChanged: onProtectionChanged,
+              activeThumbColor: BinanceTheme.yellow,
+            ),
+          ],
+        ),
+        if (useProtection)
+          Row(
+            children: [
+              Expanded(
+                child: _buildNumberInput(
+                  'Take Profit (%)',
+                  tp,
+                  onTPChanged,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildNumberInput('Stop Loss (%)', sl, onSLChanged),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Widget _buildGeneralSection() {
+    return Card(
+      color: Colors.white.withValues(alpha: 0.05),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionTitle('General Info'),
+            TextFormField(
+              controller: _nameController,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: 'Strategy Name',
+                labelStyle: TextStyle(color: Colors.white70),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white24),
+                ),
+              ),
+              validator: (value) =>
+                  value == null || value.isEmpty ? 'Please enter a name' : null,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              initialValue: _walletPercentage.toString(),
+              style: const TextStyle(color: Colors.white),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Wallet Percentage for Entry (%)',
+                labelStyle: TextStyle(color: Colors.white70),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white24),
+                ),
+                helperText: 'Max 80%',
+                helperStyle: TextStyle(color: Colors.white38, fontSize: 10),
+              ),
+              onChanged: (val) {
+                final doubleValue = double.tryParse(val);
+                if (doubleValue != null) _walletPercentage = doubleValue;
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Required';
+                final val = double.tryParse(value);
+                if (val == null) return 'Invalid number';
+                if (val <= 0 || val > 80) return 'Must be between 1 and 80';
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: BinanceTheme.yellow,
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.2,
+      ),
+    );
+  }
+
+  Widget _buildNumberInput(
+    String label,
+    double value,
+    Function(double) onChanged,
+  ) {
+    return TextFormField(
+      initialValue: value.toString(),
+      style: const TextStyle(color: Colors.white, fontSize: 13),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white54, fontSize: 11),
+        enabledBorder: const UnderlineInputBorder(
+          borderSide: BorderSide(color: Colors.white10),
+        ),
+      ),
+      onChanged: (val) {
+        final doubleValue = double.tryParse(val);
+        if (doubleValue != null) onChanged(doubleValue);
+      },
+    );
+  }
+
+  String _conditionToString(Condition c) {
+    final opStr = _opToSymbol(c.op);
+    String leftSide = c.type == ConditionType.price
+        ? 'Price'
+        : c.indicatorName!;
+    String rightSide = c.targetIndicatorName ?? c.value.toString();
+    String suffix = c.useLastClosedData ? ' [Last]' : '';
+    return '$leftSide $opStr $rightSide$suffix';
+  }
+
+  String _opToSymbol(Operator op) {
+    switch (op) {
+      case Operator.greaterThan:
+        return '>';
+      case Operator.lessThan:
+        return '<';
+      case Operator.equal:
+        return '==';
+      case Operator.crossesAbove:
+        return '↑';
+      case Operator.crossesBelow:
+        return '↓';
+    }
   }
 
   Widget _buildLastEvaluationSection(EvaluationResult result) {
@@ -512,239 +901,6 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     );
   }
 
-  Widget _buildGeneralSection() {
-    return Card(
-      color: Colors.white.withValues(alpha: 0.05),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionTitle('General Info'),
-            TextFormField(
-              controller: _nameController,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: 'Strategy Name',
-                labelStyle: TextStyle(color: Colors.white70),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white24),
-                ),
-              ),
-              validator: (value) =>
-                  value == null || value.isEmpty ? 'Please enter a name' : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              initialValue: _walletPercentage.toString(),
-              style: const TextStyle(color: Colors.white),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(
-                labelText: 'Wallet Percentage for Entry (%)',
-                labelStyle: TextStyle(color: Colors.white70),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white24),
-                ),
-                helperText: 'Max 80%',
-                helperStyle: TextStyle(color: Colors.white38, fontSize: 10),
-              ),
-              onChanged: (val) {
-                final doubleValue = double.tryParse(val);
-                if (doubleValue != null) _walletPercentage = doubleValue;
-              },
-              validator: (value) {
-                if (value == null || value.isEmpty) return 'Required';
-                final val = double.tryParse(value);
-                if (val == null) return 'Invalid number';
-                if (val <= 0 || val > 80) return 'Must be between 1 and 80';
-                return null;
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEntrySection(
-    String title,
-    List<Condition> conditions,
-    bool useProtection,
-    double tp,
-    double sl,
-    Function(bool) onProtectionChanged,
-    Function(double) onTPChanged,
-    Function(double) onSLChanged,
-  ) {
-    return Card(
-      color: Colors.white.withValues(alpha: 0.05),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionTitle(title),
-            _buildConditionsList(conditions),
-            const SizedBox(height: 16),
-            const Divider(color: Colors.white10),
-            Row(
-              children: [
-                const Text(
-                  'Auto Protection (TP/SL)',
-                  style: TextStyle(color: Colors.white, fontSize: 14),
-                ),
-                const Spacer(),
-                Switch(
-                  value: useProtection,
-                  onChanged: onProtectionChanged,
-                  activeThumbColor: BinanceTheme.yellow,
-                ),
-              ],
-            ),
-            if (useProtection)
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildNumberInput(
-                      'Take Profit (%)',
-                      tp,
-                      onTPChanged,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildNumberInput('Stop Loss (%)', sl, onSLChanged),
-                  ),
-                ],
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExitSection(String title, List<Condition> conditions) {
-    return Card(
-      color: Colors.white.withValues(alpha: 0.05),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionTitle(title),
-            _buildConditionsList(conditions),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildConditionsList(List<Condition> conditions) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ...conditions.asMap().entries.map((entry) {
-          final index = entry.key;
-          final condition = entry.value;
-          return Container(
-            margin: const EdgeInsets.only(top: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: ListTile(
-              dense: true,
-              title: Text(
-                _conditionToString(condition),
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-              ),
-              trailing: IconButton(
-                icon: const Icon(
-                  Icons.remove_circle_outline,
-                  color: Colors.redAccent,
-                  size: 18,
-                ),
-                onPressed: () => setState(() => conditions.removeAt(index)),
-              ),
-            ),
-          );
-        }),
-        const SizedBox(height: 8),
-        TextButton.icon(
-          onPressed: () => _showAddConditionDialog(conditions),
-          icon: const Icon(Icons.add, color: BinanceTheme.yellow, size: 16),
-          label: const Text(
-            'Add Condition',
-            style: TextStyle(color: BinanceTheme.yellow, fontSize: 12),
-          ),
-          style: TextButton.styleFrom(padding: EdgeInsets.zero),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        color: BinanceTheme.yellow,
-        fontSize: 14,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 1.2,
-      ),
-    );
-  }
-
-  Widget _buildNumberInput(
-    String label,
-    double value,
-    Function(double) onChanged,
-  ) {
-    return TextFormField(
-      initialValue: value.toString(),
-      style: const TextStyle(color: Colors.white, fontSize: 13),
-      keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white54, fontSize: 11),
-        enabledBorder: const UnderlineInputBorder(
-          borderSide: BorderSide(color: Colors.white10),
-        ),
-      ),
-      onChanged: (val) {
-        final doubleValue = double.tryParse(val);
-        if (doubleValue != null) onChanged(doubleValue);
-      },
-    );
-  }
-
-  String _conditionToString(Condition c) {
-    final opStr = _opToSymbol(c.op);
-    String leftSide = c.type == ConditionType.price
-        ? 'Price'
-        : c.indicatorName!;
-    String rightSide = c.targetIndicatorName ?? c.value.toString();
-    String suffix = c.useLastClosedData ? ' [Last]' : '';
-    return '$leftSide $opStr $rightSide$suffix';
-  }
-
-  String _opToSymbol(Operator op) {
-    switch (op) {
-      case Operator.greaterThan:
-        return '>';
-      case Operator.lessThan:
-        return '<';
-      case Operator.equal:
-        return '==';
-      case Operator.crossesAbove:
-        return '↑';
-      case Operator.crossesBelow:
-        return '↓';
-    }
-  }
-
   void _showEvaluationModal(BuildContext context) {
     final settings = context.read<SettingsViewModel>();
     String selectedSymbol = settings.selectedSymbols.isNotEmpty
@@ -753,21 +909,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     String selectedInterval = '1h';
     int selectedLeverage = 10;
     final intervals = [
-      '1m',
-      '3m',
-      '5m',
-      '15m',
-      '30m',
-      '1h',
-      '2h',
-      '4h',
-      '6h',
-      '8h',
-      '12h',
-      '1d',
-      '3d',
-      '1w',
-      '1M',
+      '1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w', '1M',
     ];
     final leverages = [1, 5, 10, 20];
     final capitalController = TextEditingController(text: '1000');
@@ -794,11 +936,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                     children: [
                       const Text(
                         'Strategy Evaluation',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.white54),
@@ -822,9 +960,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                                   'Symbol',
                                   selectedSymbol,
                                   settings.selectedSymbols,
-                                  (val) => setModalState(
-                                    () => selectedSymbol = val!,
-                                  ),
+                                  (val) => setModalState(() => selectedSymbol = val!),
                                 ),
                               ),
                               const SizedBox(width: 16),
@@ -833,9 +969,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                                   'Interval',
                                   selectedInterval,
                                   intervals,
-                                  (val) => setModalState(
-                                    () => selectedInterval = val!,
-                                  ),
+                                  (val) => setModalState(() => selectedInterval = val!),
                                 ),
                               ),
                             ],
@@ -851,31 +985,16 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                                   children: [
                                     const Text(
                                       'Initial Capital (USDT)',
-                                      style: TextStyle(
-                                        color: BinanceTheme.yellow,
-                                        fontSize: 11,
-                                      ),
+                                      style: TextStyle(color: BinanceTheme.yellow, fontSize: 11),
                                     ),
                                     TextField(
                                       controller: capitalController,
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                            decimal: true,
-                                          ),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                      ),
+                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                      style: const TextStyle(color: Colors.white, fontSize: 14),
                                       decoration: const InputDecoration(
                                         isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(
-                                          vertical: 8,
-                                        ),
-                                        enabledBorder: UnderlineInputBorder(
-                                          borderSide: BorderSide(
-                                            color: Colors.white24,
-                                          ),
-                                        ),
+                                        contentPadding: EdgeInsets.symmetric(vertical: 8),
+                                        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
                                       ),
                                     ),
                                   ],
@@ -888,32 +1007,19 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                                   'Leverage',
                                   '${selectedLeverage}x',
                                   leverages.map((l) => '${l}x').toList(),
-                                  (val) => setModalState(
-                                    () => selectedLeverage = int.parse(
-                                      val!.replaceAll('x', ''),
-                                    ),
-                                  ),
+                                  (val) => setModalState(() => selectedLeverage = int.parse(val!.replaceAll('x', ''))),
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 32),
-                          if (evalViewModel.isEvaluating ||
-                              evalViewModel.progress > 0) ...[
-                            const Text(
-                              'Progress',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                              ),
-                            ),
+                          if (evalViewModel.isEvaluating || evalViewModel.progress > 0) ...[
+                            const Text('Progress', style: TextStyle(color: Colors.white70, fontSize: 12)),
                             const SizedBox(height: 8),
                             LinearProgressIndicator(
                               value: evalViewModel.progress,
                               backgroundColor: Colors.white10,
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                BinanceTheme.yellow,
-                              ),
+                              valueColor: const AlwaysStoppedAnimation<Color>(BinanceTheme.yellow),
                             ),
                             const SizedBox(height: 24),
                             _buildResultGrid(evalViewModel),
@@ -921,13 +1027,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                           if (evalViewModel.error != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 16),
-                              child: Text(
-                                evalViewModel.error!,
-                                style: const TextStyle(
-                                  color: Colors.redAccent,
-                                  fontSize: 12,
-                                ),
-                              ),
+                              child: Text(evalViewModel.error!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
                             ),
                           const SizedBox(height: 16),
                         ],
@@ -946,48 +1046,31 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                                 name: _nameController.text,
                                 walletPercentage: _walletPercentage,
                                 longEntry: EntrySettings(
-                                  conditions: _longEntryConditions,
+                                  groups: _longEntryGroups,
+                                  operator: _longEntryOperator,
                                   useProtection: _longUseProtection,
                                   takeProfit: _longTP,
                                   stopLoss: _longSL,
                                 ),
                                 shortEntry: EntrySettings(
-                                  conditions: _shortEntryConditions,
+                                  groups: _shortEntryGroups,
+                                  operator: _shortEntryOperator,
                                   useProtection: _shortUseProtection,
                                   takeProfit: _shortTP,
                                   stopLoss: _shortSL,
                                 ),
-                                longExit: StrategyPhase(
-                                  conditions: _longExitConditions,
-                                ),
-                                shortExit: StrategyPhase(
-                                  conditions: _shortExitConditions,
-                                ),
+                                longExit: StrategyPhase(groups: _longExitGroups, operator: _longExitOperator),
+                                shortExit: StrategyPhase(groups: _shortExitGroups, operator: _shortExitOperator),
                               );
-                              final capital =
-                                  double.tryParse(capitalController.text) ??
-                                  1000.0;
+                              final capital = double.tryParse(capitalController.text) ?? 1000.0;
                               evalViewModel
-                                  .evaluate(
-                                    strategy,
-                                    selectedSymbol,
-                                    selectedInterval,
-                                    capital,
-                                    selectedLeverage,
-                                  )
+                                  .evaluate(strategy, selectedSymbol, selectedInterval, capital, selectedLeverage)
                                   .then((_) {
-                                    if (context.mounted &&
-                                        evalViewModel.lastResult != null &&
-                                        evalViewModel.error == null) {
-                                      final updatedStrategy = strategy.copyWith(
-                                        lastResult: evalViewModel.lastResult,
-                                      );
-                                      Provider.of<StrategyViewModel>(
-                                        context,
-                                        listen: false,
-                                      ).updateStrategy(updatedStrategy);
-                                    }
-                                  });
+                                if (context.mounted && evalViewModel.lastResult != null && evalViewModel.error == null) {
+                                  final updatedStrategy = strategy.copyWith(lastResult: evalViewModel.lastResult);
+                                  Provider.of<StrategyViewModel>(context, listen: false).updateStrategy(updatedStrategy);
+                                }
+                              });
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: BinanceTheme.yellow,
@@ -995,11 +1078,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         disabledBackgroundColor: Colors.white10,
                       ),
-                      child: Text(
-                        evalViewModel.isEvaluating
-                            ? 'Evaluating...'
-                            : 'Start Evaluation',
-                      ),
+                      child: Text(evalViewModel.isEvaluating ? 'Evaluating...' : 'Start Evaluation'),
                     ),
                   ),
                 ],
@@ -1011,28 +1090,18 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     );
   }
 
-  Widget _buildModalDropdown(
-    String label,
-    String value,
-    List<String> items,
-    Function(String?) onChanged,
-  ) {
+  Widget _buildModalDropdown(String label, String value, List<String> items, Function(String?) onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: BinanceTheme.yellow, fontSize: 11),
-        ),
+        Text(label, style: const TextStyle(color: BinanceTheme.yellow, fontSize: 11)),
         DropdownButton<String>(
           value: value,
           isExpanded: true,
           dropdownColor: Colors.grey[850],
           style: const TextStyle(color: Colors.white, fontSize: 14),
           underline: Container(height: 1, color: Colors.white24),
-          items: items
-              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-              .toList(),
+          items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
           onChanged: onChanged,
         ),
       ],
@@ -1050,21 +1119,9 @@ class _StrategyEditViewState extends State<StrategyEditView> {
           crossAxisSpacing: 10,
           physics: const NeverScrollableScrollPhysics(),
           children: [
-            _buildResultItem(
-              'Total Trades',
-              viewModel.totalTrades.toString(),
-              Colors.white,
-            ),
-            _buildResultItem(
-              'Profitable',
-              viewModel.profitableTrades.toString(),
-              Colors.greenAccent,
-            ),
-            _buildResultItem(
-              'Losses',
-              viewModel.lossTrades.toString(),
-              Colors.redAccent,
-            ),
+            _buildResultItem('Total Trades', viewModel.totalTrades.toString(), Colors.white),
+            _buildResultItem('Profitable', viewModel.profitableTrades.toString(), Colors.greenAccent),
+            _buildResultItem('Losses', viewModel.lossTrades.toString(), Colors.redAccent),
           ],
         ),
         const SizedBox(height: 10),
@@ -1076,21 +1133,9 @@ class _StrategyEditViewState extends State<StrategyEditView> {
           crossAxisSpacing: 10,
           physics: const NeverScrollableScrollPhysics(),
           children: [
-            _buildResultItem(
-              'Gross Profit',
-              '+${viewModel.totalGrossProfitUsdt.toStringAsFixed(2)}',
-              Colors.greenAccent,
-            ),
-            _buildResultItem(
-              'Gross Loss',
-              viewModel.totalGrossLossUsdt.toStringAsFixed(2),
-              Colors.redAccent,
-            ),
-            _buildResultItem(
-              'Total Fees',
-              '-${viewModel.totalFeesUsdt.toStringAsFixed(2)}',
-              Colors.orangeAccent,
-            ),
+            _buildResultItem('Gross Profit', '+${viewModel.totalGrossProfitUsdt.toStringAsFixed(2)}', Colors.greenAccent),
+            _buildResultItem('Gross Loss', viewModel.totalGrossLossUsdt.toStringAsFixed(2), Colors.redAccent),
+            _buildResultItem('Total Fees', '-${viewModel.totalFeesUsdt.toStringAsFixed(2)}', Colors.orangeAccent),
           ],
         ),
         const SizedBox(height: 10),
@@ -1106,9 +1151,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
             _buildResultItem(
               'Net Earnings',
               viewModel.totalEarnings.toStringAsFixed(2),
-              viewModel.totalEarnings >= 0
-                  ? Colors.greenAccent
-                  : Colors.redAccent,
+              viewModel.totalEarnings >= 0 ? Colors.greenAccent : Colors.redAccent,
               isBold: true,
             ),
             const SizedBox.shrink(),
@@ -1118,12 +1161,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     );
   }
 
-  Widget _buildResultItem(
-    String label,
-    String value,
-    Color color, {
-    bool isBold = false,
-  }) {
+  Widget _buildResultItem(String label, String value, Color color, {bool isBold = false}) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
@@ -1133,20 +1171,12 @@ class _StrategyEditViewState extends State<StrategyEditView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white54, fontSize: 10),
-            textAlign: TextAlign.center,
-          ),
+          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 10), textAlign: TextAlign.center),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               value,
-              style: TextStyle(
-                color: color,
-                fontSize: 14,
-                fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-              ),
+              style: TextStyle(color: color, fontSize: 14, fontWeight: isBold ? FontWeight.bold : FontWeight.normal),
             ),
           ),
         ],
@@ -1168,30 +1198,19 @@ class _StrategyEditViewState extends State<StrategyEditView> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: Colors.grey[900],
-          title: const Text(
-            'Add Condition',
-            style: TextStyle(color: Colors.white),
-          ),
+          title: const Text('Add Condition', style: TextStyle(color: Colors.white)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Source',
-                  style: TextStyle(color: BinanceTheme.yellow, fontSize: 12),
-                ),
+                const Text('Source', style: TextStyle(color: BinanceTheme.yellow, fontSize: 12)),
                 DropdownButton<ConditionType>(
                   value: selectedType,
                   dropdownColor: Colors.grey[850],
                   isExpanded: true,
                   style: const TextStyle(color: Colors.white),
-                  items: ConditionType.values.map((type) {
-                    return DropdownMenuItem(
-                      value: type,
-                      child: Text(type.name.toUpperCase()),
-                    );
-                  }).toList(),
+                  items: ConditionType.values.map((type) => DropdownMenuItem(value: type, child: Text(type.name.toUpperCase()))).toList(),
                   onChanged: (val) => setDialogState(() => selectedType = val!),
                 ),
                 if (selectedType == ConditionType.indicator)
@@ -1200,76 +1219,34 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                     dropdownColor: Colors.grey[850],
                     isExpanded: true,
                     style: const TextStyle(color: Colors.white),
-                    items:
-                        [
-                          'RSI',
-                          'EMA7',
-                          'EMA25',
-                          'EMA99',
-                          'UP',
-                          'MB',
-                          'DN',
-                          'MACD',
-                          'DIF',
-                          'DEA',
-                        ].map((name) {
-                          return DropdownMenuItem(
-                            value: name,
-                            child: Text(name),
-                          );
-                        }).toList(),
-                    onChanged: (val) =>
-                        setDialogState(() => selectedIndicator = val!),
+                    items: ['RSI', 'EMA7', 'EMA25', 'EMA99', 'UP', 'MB', 'DN', 'MACD', 'DIF', 'DEA'].map((name) => DropdownMenuItem(value: name, child: Text(name))).toList(),
+                    onChanged: (val) => setDialogState(() => selectedIndicator = val!),
                   ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Operator',
-                  style: TextStyle(color: BinanceTheme.yellow, fontSize: 12),
-                ),
+                const Text('Operator', style: TextStyle(color: BinanceTheme.yellow, fontSize: 12)),
                 DropdownButton<Operator>(
                   value: selectedOp,
                   dropdownColor: Colors.grey[850],
                   isExpanded: true,
                   style: const TextStyle(color: Colors.white),
-                  items: Operator.values.map((op) {
-                    return DropdownMenuItem(
-                      value: op,
-                      child: Text(op.name.toUpperCase()),
-                    );
-                  }).toList(),
+                  items: Operator.values.map((op) => DropdownMenuItem(value: op, child: Text(op.name.toUpperCase()))).toList(),
                   onChanged: (val) => setDialogState(() => selectedOp = val!),
                 ),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Compare with',
-                      style: TextStyle(
-                        color: BinanceTheme.yellow,
-                        fontSize: 12,
-                      ),
-                    ),
+                    const Text('Compare with', style: TextStyle(color: BinanceTheme.yellow, fontSize: 12)),
                     Row(
                       children: [
-                        const Text(
-                          'Value',
-                          style: TextStyle(color: Colors.white54, fontSize: 10),
-                        ),
+                        const Text('Value', style: TextStyle(color: Colors.white54, fontSize: 10)),
                         Switch(
                           value: isComparingWithIndicator,
                           activeThumbColor: BinanceTheme.yellow,
-                          activeTrackColor: BinanceTheme.yellow.withValues(
-                            alpha: 0.5,
-                          ),
-                          onChanged: (val) => setDialogState(
-                            () => isComparingWithIndicator = val,
-                          ),
+                          activeTrackColor: BinanceTheme.yellow.withValues(alpha: 0.5),
+                          onChanged: (val) => setDialogState(() => isComparingWithIndicator = val),
                         ),
-                        const Text(
-                          'Indicator',
-                          style: TextStyle(color: Colors.white54, fontSize: 10),
-                        ),
+                        const Text('Indicator', style: TextStyle(color: Colors.white54, fontSize: 10)),
                       ],
                     ),
                   ],
@@ -1280,58 +1257,26 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                     dropdownColor: Colors.grey[850],
                     isExpanded: true,
                     style: const TextStyle(color: Colors.white),
-                    items:
-                        [
-                          'RSI',
-                          'EMA7',
-                          'EMA25',
-                          'EMA99',
-                          'UP',
-                          'MB',
-                          'DN',
-                          'MACD',
-                          'DIF',
-                          'DEA',
-                        ].map((name) {
-                          return DropdownMenuItem(
-                            value: name,
-                            child: Text(name),
-                          );
-                        }).toList(),
-                    onChanged: (val) =>
-                        setDialogState(() => targetIndicator = val!),
+                    items: ['RSI', 'EMA7', 'EMA25', 'EMA99', 'UP', 'MB', 'DN', 'MACD', 'DIF', 'DEA'].map((name) => DropdownMenuItem(value: name, child: Text(name))).toList(),
+                    onChanged: (val) => setDialogState(() => targetIndicator = val!),
                   )
                 else
                   TextField(
                     controller: valueController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
                     style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
-                      labelText: 'Constant Value',
-                      labelStyle: TextStyle(color: Colors.white70),
-                    ),
+                    decoration: const InputDecoration(labelText: 'Constant Value', labelStyle: TextStyle(color: Colors.white70)),
                   ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    const Text(
-                      'Use Last Closed Candle',
-                      style: TextStyle(
-                        color: BinanceTheme.yellow,
-                        fontSize: 12,
-                      ),
-                    ),
+                    const Text('Use Last Closed Candle', style: TextStyle(color: BinanceTheme.yellow, fontSize: 12)),
                     const Spacer(),
                     Switch(
                       value: useLastClosedData,
                       activeThumbColor: BinanceTheme.yellow,
-                      activeTrackColor: BinanceTheme.yellow.withValues(
-                        alpha: 0.5,
-                      ),
-                      onChanged: (val) =>
-                          setDialogState(() => useLastClosedData = val),
+                      activeTrackColor: BinanceTheme.yellow.withValues(alpha: 0.5),
+                      onChanged: (val) => setDialogState(() => useLastClosedData = val),
                     ),
                   ],
                 ),
@@ -1339,10 +1284,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
             TextButton(
               onPressed: () {
                 double value = 0;
@@ -1351,32 +1293,20 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                   if (parsed == null) return;
                   value = parsed;
                 }
-
                 setState(() {
-                  conditions.add(
-                    Condition(
-                      type: selectedType,
-                      indicatorName: selectedType == ConditionType.indicator
-                          ? selectedIndicator
-                          : null,
-                      op: selectedOp,
-                      value: value,
-                      targetType: isComparingWithIndicator
-                          ? ConditionType.indicator
-                          : ConditionType.price,
-                      targetIndicatorName: isComparingWithIndicator
-                          ? targetIndicator
-                          : null,
-                      useLastClosedData: useLastClosedData,
-                    ),
-                  );
+                  conditions.add(Condition(
+                    type: selectedType,
+                    indicatorName: selectedType == ConditionType.indicator ? selectedIndicator : null,
+                    op: selectedOp,
+                    value: value,
+                    targetType: isComparingWithIndicator ? ConditionType.indicator : ConditionType.price,
+                    targetIndicatorName: isComparingWithIndicator ? targetIndicator : null,
+                    useLastClosedData: useLastClosedData,
+                  ));
                 });
                 Navigator.pop(context);
               },
-              child: const Text(
-                'Add',
-                style: TextStyle(color: BinanceTheme.yellow),
-              ),
+              child: const Text('Add', style: TextStyle(color: BinanceTheme.yellow)),
             ),
           ],
         ),

@@ -424,8 +424,16 @@ class DashboardViewModel extends ChangeNotifier {
       return;
     }
 
-    final longMet = _evaluatePhase(strategy.longEntry.conditions, _datas);
-    final shortMet = _evaluatePhase(strategy.shortEntry.conditions, _datas);
+    final longMet = _evaluatePhase(
+      strategy.longEntry.groups,
+      _datas,
+      strategy.longEntry.operator,
+    );
+    final shortMet = _evaluatePhase(
+      strategy.shortEntry.groups,
+      _datas,
+      strategy.shortEntry.operator,
+    );
 
     logger.d('Entry evaluation for $symbol: Long=$longMet, Short=$shortMet');
 
@@ -558,11 +566,9 @@ class DashboardViewModel extends ChangeNotifier {
     }
 
     final isLong = position.positionAmt > 0;
-    final exitConditions = isLong
-        ? strategy.longExit.conditions
-        : strategy.shortExit.conditions;
+    final exitPhase = isLong ? strategy.longExit : strategy.shortExit;
 
-    if (_evaluatePhase(exitConditions, _datas)) {
+    if (_evaluatePhase(exitPhase.groups, _datas, exitPhase.operator)) {
       logger.i(
         '${isLong ? "Long" : "Short"} exit conditions met for $symbol using ${strategy.name}',
       );
@@ -639,12 +645,42 @@ class DashboardViewModel extends ChangeNotifier {
     }
   }
 
-  bool _evaluatePhase(List<Condition> conditions, List<KLineEntity> data) {
-    if (conditions.isEmpty) return false;
-    for (var condition in conditions) {
-      if (!_evaluateCondition(condition, data)) return false;
+  bool _evaluatePhase(
+    List<ConditionGroup> groups,
+    List<KLineEntity> data,
+    String outerOp,
+  ) {
+    if (groups.isEmpty) return false;
+
+    if (outerOp == 'AND') {
+      for (var group in groups) {
+        if (!_evaluateGroup(group, data)) return false;
+      }
+      return true;
+    } else {
+      // OR
+      for (var group in groups) {
+        if (_evaluateGroup(group, data)) return true;
+      }
+      return false;
     }
-    return true;
+  }
+
+  bool _evaluateGroup(ConditionGroup group, List<KLineEntity> data) {
+    if (group.conditions.isEmpty) return true; // Empty group is true
+
+    if (group.operator == 'AND') {
+      for (var condition in group.conditions) {
+        if (!_evaluateCondition(condition, data)) return false;
+      }
+      return true;
+    } else {
+      // OR
+      for (var condition in group.conditions) {
+        if (_evaluateCondition(condition, data)) return true;
+      }
+      return false;
+    }
   }
 
   bool _evaluateCondition(Condition condition, List<KLineEntity> data) {

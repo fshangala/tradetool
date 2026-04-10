@@ -11,17 +11,21 @@ This tool provides a streamlined, high-performance interface for futures traders
 - **Dynamic Pair Selection:** Quickly switch between symbols using a dashboard dropdown, synced with your personalized settings.
 - **Advanced Interval Support:** Choose from 15 timeframes ranging from 1 minute to 1 month.
 - **Automated Trading Strategies:** Create and manage custom strategies with sophisticated entry and exit logic.
-    - **Dual-Side Support:** Define independent conditions for Long and Short entries/exits within the same strategy.
+    - **Separate Long/Short Conditions:** Define independent entry and exit conditions for Long and Short positions within the same strategy.
+    - **Condition Groups:** Group multiple conditions together with independent logical operators (**AND/OR**).
+    - **Nested Logic Support:** Combine groups using a phase-level operator (e.g., `(A OR B) AND (C OR D)`), providing extreme flexibility for entry/exit triggers.
     - **Integrated Protection:** Configure Take Profit and Stop Loss directly in the entry settings for immediate placement upon order fill.
     - **Expanded Indicators:** Supports **RSI**, **EMA** (7, 25, 99), **Bollinger Bands** (UP, MB, DN), and **MACD** (Histogram, DIF, DEA).
-    - **Accurate Evaluation:** Accurate evaluation of technical indicators using specialized data lists (e.g., `emaValueList`).
+    - **Accurate Evaluation:** Precise technical indicator calculation using specialized data lists (e.g., `emaValueList`).
     - **Dynamic Comparisons:** Compare price or indicators against other indicators (e.g., "Price < DN" or "DIF > DEA").
+    - **Signed Value Inputs:** Full support for negative numbers in condition thresholds (e.g., comparing MACD Hist < -5.0).
     - **Customizable Wallet Usage:** Allocate 1-80% of available wallet balance per strategy.
 - **Dashboard Automation:** Optimized for hands-free trading with automated strategy execution and a "Retry" mechanism for failed API actions.
 - **Algo Order Service:** Utilizes Binance's specialized Algo Order API for reliable automated protection.
 - **Strategy Evaluation (Backtesting):** Perform high-fidelity strategy simulations before going live.
     - **Realistic Fees:** Simulates Binance VIP 0 Maker (0.02%) and Taker (0.05%) fees.
     - **Leverage Support:** Backtest using 1x, 5x, 10x, or 20x leverage.
+    - **Detailed Trade History:** Captures and displays every simulated trade with full entry/exit candle data, including indicator values at the exact moment of trigger.
     - **Performance Scoring:** Automatically calculates a **5-star rating** based on Net Earnings and Profit Factor.
     - **Persistence:** Latest evaluation results and input parameters are saved to each strategy for easy comparison.
     - **Live Analytics:** Track Gross Profit, Gross Loss, Fees, and final Net Earnings during the simulation.

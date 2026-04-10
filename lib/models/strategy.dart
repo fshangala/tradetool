@@ -1,3 +1,4 @@
+import 'package:uuid/uuid.dart';
 enum ConditionType { price, indicator }
 
 enum Operator { greaterThan, lessThan, equal, crossesAbove, crossesBelow }
@@ -52,59 +53,142 @@ class Condition {
   }
 }
 
-class StrategyPhase {
+class ConditionGroup {
+  final String id;
   final List<Condition> conditions;
-  final String logicOperator;
+  final String operator; // 'AND' or 'OR'
 
-  StrategyPhase({required this.conditions, this.logicOperator = 'AND'});
+  ConditionGroup({
+    required this.id,
+    required this.conditions,
+    this.operator = 'AND',
+  });
 
-  factory StrategyPhase.fromJson(Map<String, dynamic> json) {
-    return StrategyPhase(
+  factory ConditionGroup.fromJson(Map<String, dynamic> json) {
+    return ConditionGroup(
+      id: json['id'] ?? const Uuid().v4(),
       conditions: (json['conditions'] as List)
           .map((c) => Condition.fromJson(c))
           .toList(),
-      logicOperator: json['logicOperator'] ?? 'AND',
+      operator: json['operator'] ?? 'AND',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'conditions': conditions.map((c) => c.toJson()).toList(),
-      'logicOperator': logicOperator,
+      'operator': operator,
+    };
+  }
+
+  ConditionGroup copyWith({
+    String? id,
+    List<Condition>? conditions,
+    String? operator,
+  }) {
+    return ConditionGroup(
+      id: id ?? this.id,
+      conditions: conditions ?? this.conditions,
+      operator: operator ?? this.operator,
+    );
+  }
+}
+
+class StrategyPhase {
+  final List<ConditionGroup> groups;
+  final String operator; // Outer operator: 'AND' or 'OR'
+
+  StrategyPhase({required this.groups, this.operator = 'AND'});
+
+  factory StrategyPhase.fromJson(Map<String, dynamic> json) {
+    // Migration logic for legacy single condition list
+    if (json.containsKey('conditions')) {
+      final conditions = (json['conditions'] as List)
+          .map((c) => Condition.fromJson(c))
+          .toList();
+      return StrategyPhase(
+        groups: [
+          ConditionGroup(
+            id: const Uuid().v4(),
+            conditions: conditions,
+            operator: json['logicOperator'] ?? 'AND',
+          ),
+        ],
+        operator: 'AND',
+      );
+    }
+
+    return StrategyPhase(
+      groups: (json['groups'] as List)
+          .map((g) => ConditionGroup.fromJson(g))
+          .toList(),
+      operator: json['operator'] ?? 'AND',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'groups': groups.map((g) => g.toJson()).toList(),
+      'operator': operator,
     };
   }
 }
 
 class EntrySettings {
-  final List<Condition> conditions;
+  final List<ConditionGroup> groups;
   final bool useProtection;
   final double takeProfit;
   final double stopLoss;
+  final String operator; // Outer operator: 'AND' or 'OR'
 
   EntrySettings({
-    required this.conditions,
+    required this.groups,
     this.useProtection = false,
     this.takeProfit = 1.0,
     this.stopLoss = 1.0,
+    this.operator = 'AND',
   });
 
   factory EntrySettings.fromJson(Map<String, dynamic> json) {
-    return EntrySettings(
-      conditions: (json['conditions'] as List)
+    // Migration logic for legacy single condition list
+    if (json.containsKey('conditions')) {
+      final conditions = (json['conditions'] as List)
           .map((c) => Condition.fromJson(c))
+          .toList();
+      return EntrySettings(
+        groups: [
+          ConditionGroup(
+            id: const Uuid().v4(),
+            conditions: conditions,
+            operator: 'AND',
+          ),
+        ],
+        useProtection: json['useProtection'] ?? false,
+        takeProfit: (json['takeProfit'] as num?)?.toDouble() ?? 1.0,
+        stopLoss: (json['stopLoss'] as num?)?.toDouble() ?? 1.0,
+        operator: 'AND',
+      );
+    }
+
+    return EntrySettings(
+      groups: (json['groups'] as List)
+          .map((g) => ConditionGroup.fromJson(g))
           .toList(),
       useProtection: json['useProtection'] ?? false,
       takeProfit: (json['takeProfit'] as num?)?.toDouble() ?? 1.0,
       stopLoss: (json['stopLoss'] as num?)?.toDouble() ?? 1.0,
+      operator: json['operator'] ?? 'AND',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'conditions': conditions.map((c) => c.toJson()).toList(),
+      'groups': groups.map((g) => g.toJson()).toList(),
       'useProtection': useProtection,
       'takeProfit': takeProfit,
       'stopLoss': stopLoss,
+      'operator': operator,
     };
   }
 }
