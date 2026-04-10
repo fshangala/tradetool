@@ -109,6 +109,126 @@ class EntrySettings {
   }
 }
 
+class SimulatedCandle {
+  final double open;
+  final double high;
+  final double low;
+  final double close;
+  final double vol;
+  final double? rsi;
+  final double? ema7;
+  final double? ema25;
+  final double? ema99;
+  final double? bollUp;
+  final double? bollMid;
+  final double? bollDn;
+  final double? macd;
+  final double? dif;
+  final double? dea;
+  final int time;
+
+  SimulatedCandle({
+    required this.open,
+    required this.high,
+    required this.low,
+    required this.close,
+    required this.vol,
+    this.rsi,
+    this.ema7,
+    this.ema25,
+    this.ema99,
+    this.bollUp,
+    this.bollMid,
+    this.bollDn,
+    this.macd,
+    this.dif,
+    this.dea,
+    required this.time,
+  });
+
+  factory SimulatedCandle.fromJson(Map<String, dynamic> json) {
+    return SimulatedCandle(
+      open: (json['open'] as num).toDouble(),
+      high: (json['high'] as num).toDouble(),
+      low: (json['low'] as num).toDouble(),
+      close: (json['close'] as num).toDouble(),
+      vol: (json['vol'] as num).toDouble(),
+      rsi: (json['rsi'] as num?)?.toDouble(),
+      ema7: (json['ema7'] as num?)?.toDouble(),
+      ema25: (json['ema25'] as num?)?.toDouble(),
+      ema99: (json['ema99'] as num?)?.toDouble(),
+      bollUp: (json['bollUp'] as num?)?.toDouble(),
+      bollMid: (json['bollMid'] as num?)?.toDouble(),
+      bollDn: (json['bollDn'] as num?)?.toDouble(),
+      macd: (json['macd'] as num?)?.toDouble(),
+      dif: (json['dif'] as num?)?.toDouble(),
+      dea: (json['dea'] as num?)?.toDouble(),
+      time: json['time'] as int,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'open': open,
+      'high': high,
+      'low': low,
+      'close': close,
+      'vol': vol,
+      'rsi': rsi,
+      'ema7': ema7,
+      'ema25': ema25,
+      'ema99': ema99,
+      'bollUp': bollUp,
+      'bollMid': bollMid,
+      'bollDn': bollDn,
+      'macd': macd,
+      'dif': dif,
+      'dea': dea,
+      'time': time,
+    };
+  }
+}
+
+class SimulatedTrade {
+  final String side;
+  final double entryPrice;
+  final double exitPrice;
+  final double netPnl;
+  final SimulatedCandle entryCandle;
+  final SimulatedCandle exitCandle;
+
+  SimulatedTrade({
+    required this.side,
+    required this.entryPrice,
+    required this.exitPrice,
+    required this.netPnl,
+    required this.entryCandle,
+    required this.exitCandle,
+  });
+
+  factory SimulatedTrade.fromJson(Map<String, dynamic> json) {
+    return SimulatedTrade(
+      side: json['side'],
+      entryPrice: (json['entryPrice'] as num).toDouble(),
+      exitPrice: (json['exitPrice'] as num).toDouble(),
+      netPnl: (json['netPnl'] as num).toDouble(),
+      entryCandle: SimulatedCandle.fromJson(json['entryCandle']),
+      exitCandle: SimulatedCandle.fromJson(json['exitCandle']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'side': side,
+      'entryPrice': entryPrice,
+      'exitPrice': exitPrice,
+      'netPnl': netPnl,
+      'entryCandle': entryCandle.toJson(),
+      'exitCandle': exitCandle.toJson(),
+    };
+  }
+}
+
 class EvaluationResult {
   final String symbol;
   final String interval;
@@ -122,6 +242,7 @@ class EvaluationResult {
   final double totalFees;
   final double netEarnings;
   final int rating; // 0-5 stars
+  final List<SimulatedTrade> trades;
 
   EvaluationResult({
     required this.symbol,
@@ -136,6 +257,7 @@ class EvaluationResult {
     required this.totalFees,
     required this.netEarnings,
     required this.rating,
+    this.trades = const [],
   });
 
   factory EvaluationResult.fromJson(Map<String, dynamic> json) {
@@ -152,6 +274,10 @@ class EvaluationResult {
       totalFees: (json['totalFees'] as num).toDouble(),
       netEarnings: (json['netEarnings'] as num).toDouble(),
       rating: json['rating'],
+      trades: (json['trades'] as List?)
+              ?.map((t) => SimulatedTrade.fromJson(t))
+              .toList() ??
+          [],
     );
   }
 
@@ -169,6 +295,7 @@ class EvaluationResult {
       'totalFees': totalFees,
       'netEarnings': netEarnings,
       'rating': rating,
+      'trades': trades.map((t) => t.toJson()).toList(),
     };
   }
 }

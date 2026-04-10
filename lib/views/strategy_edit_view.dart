@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:intl/intl.dart';
 import '../models/strategy.dart';
 import '../viewmodels/strategy_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
@@ -126,47 +127,61 @@ class _StrategyEditViewState extends State<StrategyEditView> {
           ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _buildGeneralSection(),
-            if (widget.strategy?.lastResult != null) ...[
-              const SizedBox(height: 16),
-              _buildLastEvaluationSection(widget.strategy!.lastResult!),
-            ],
-            const SizedBox(height: 24),
-            _buildEntrySection(
-              'LONG ENTRY',
-              _longEntryConditions,
-              _longUseProtection,
-              _longTP,
-              _longSL,
-              (val) => setState(() => _longUseProtection = val),
-              (val) => setState(() => _longTP = val),
-              (val) => setState(() => _longSL = val),
+      body: Consumer<StrategyViewModel>(
+        builder: (context, strategyViewModel, child) {
+          final currentStrategy = strategyViewModel.getStrategyById(_id) ??
+              Strategy(
+                id: _id,
+                name: _nameController.text,
+                longEntry: EntrySettings(conditions: _longEntryConditions),
+                shortEntry: EntrySettings(conditions: _shortEntryConditions),
+                longExit: StrategyPhase(conditions: _longExitConditions),
+                shortExit: StrategyPhase(conditions: _shortExitConditions),
+              );
+
+          return Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _buildGeneralSection(),
+                const SizedBox(height: 24),
+                _buildEntrySection(
+                  'LONG ENTRY',
+                  _longEntryConditions,
+                  _longUseProtection,
+                  _longTP,
+                  _longSL,
+                  (val) => setState(() => _longUseProtection = val),
+                  (val) => setState(() => _longTP = val),
+                  (val) => setState(() => _longSL = val),
+                ),
+                const SizedBox(height: 16),
+                _buildEntrySection(
+                  'SHORT ENTRY',
+                  _shortEntryConditions,
+                  _shortUseProtection,
+                  _shortTP,
+                  _shortSL,
+                  (val) => setState(() => _shortUseProtection = val),
+                  (val) => setState(() => _shortTP = val),
+                  (val) => setState(() => _shortSL = val),
+                ),
+                const SizedBox(height: 16),
+                _buildExitSection('LONG EXIT', _longExitConditions),
+                const SizedBox(height: 16),
+                _buildExitSection('SHORT EXIT', _shortExitConditions),
+                const SizedBox(height: 32),
+                _buildEvaluateButton(),
+                if (currentStrategy.lastResult != null) ...[
+                  const SizedBox(height: 24),
+                  _buildLastEvaluationSection(currentStrategy.lastResult!),
+                ],
+                const SizedBox(height: 80),
+              ],
             ),
-            const SizedBox(height: 16),
-            _buildEntrySection(
-              'SHORT ENTRY',
-              _shortEntryConditions,
-              _shortUseProtection,
-              _shortTP,
-              _shortSL,
-              (val) => setState(() => _shortUseProtection = val),
-              (val) => setState(() => _shortTP = val),
-              (val) => setState(() => _shortSL = val),
-            ),
-            const SizedBox(height: 16),
-            _buildExitSection('LONG EXIT', _longExitConditions),
-            const SizedBox(height: 16),
-            _buildExitSection('SHORT EXIT', _shortExitConditions),
-            const SizedBox(height: 32),
-            _buildEvaluateButton(),
-            const SizedBox(height: 80),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -214,8 +229,233 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                 ),
               ],
             ),
+            if (result.trades.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Divider(color: Colors.white10),
+              Theme(
+                data: Theme.of(context).copyWith(
+                  dividerColor: Colors.transparent,
+                ),
+                child: ExpansionTile(
+                  title: const Text(
+                    'Detailed Trade History',
+                    style: TextStyle(color: BinanceTheme.yellow, fontSize: 13),
+                  ),
+                  tilePadding: EdgeInsets.zero,
+                  children: [
+                    _buildTradeList(result.trades),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTradeList(List<SimulatedTrade> trades) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: trades.length,
+      itemBuilder: (context, index) {
+        final trade = trades[index];
+        final isProfit = trade.netPnl >= 0;
+        final dateStr = DateFormat('MM/dd HH:mm').format(
+          DateTime.fromMillisecondsSinceEpoch(trade.entryCandle.time),
+        );
+
+        return Card(
+          color: Colors.white.withValues(alpha: 0.05),
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          child: Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              title: Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color:
+                          trade.side == 'LONG'
+                              ? Colors.green.withValues(alpha: 0.2)
+                              : Colors.red.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      trade.side,
+                      style: TextStyle(
+                        color:
+                            trade.side == 'LONG'
+                                ? Colors.greenAccent
+                                : Colors.redAccent,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    dateStr,
+                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${isProfit ? '+' : ''}${trade.netPnl.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: isProfit ? Colors.greenAccent : Colors.redAccent,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildTradeDetail(
+                              'ENTRY CANDLE',
+                              trade.entryCandle,
+                              trade.entryPrice,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildTradeDetail(
+                              'EXIT CANDLE',
+                              trade.exitCandle,
+                              trade.exitPrice,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTradeDetail(String title, SimulatedCandle candle, double price) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: BinanceTheme.yellow,
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 6),
+        _buildIndicatorRow('Price', price.toStringAsFixed(2), Colors.white),
+        _buildIndicatorRow(
+          'Open',
+          candle.open.toStringAsFixed(2),
+          Colors.white70,
+        ),
+        _buildIndicatorRow(
+          'High',
+          candle.high.toStringAsFixed(2),
+          Colors.white70,
+        ),
+        _buildIndicatorRow(
+          'Low',
+          candle.low.toStringAsFixed(2),
+          Colors.white70,
+        ),
+        _buildIndicatorRow(
+          'Close',
+          candle.close.toStringAsFixed(2),
+          Colors.white70,
+        ),
+        const Divider(color: Colors.white10, height: 12),
+        if (candle.rsi != null)
+          _buildIndicatorRow(
+            'RSI',
+            candle.rsi!.toStringAsFixed(2),
+            Colors.orangeAccent,
+          ),
+        if (candle.ema7 != null)
+          _buildIndicatorRow(
+            'EMA7',
+            candle.ema7!.toStringAsFixed(2),
+            Colors.blueAccent,
+          ),
+        if (candle.ema25 != null)
+          _buildIndicatorRow(
+            'EMA25',
+            candle.ema25!.toStringAsFixed(2),
+            Colors.purpleAccent,
+          ),
+        if (candle.ema99 != null)
+          _buildIndicatorRow(
+            'EMA99',
+            candle.ema99!.toStringAsFixed(2),
+            Colors.redAccent,
+          ),
+        if (candle.bollUp != null) ...[
+          _buildIndicatorRow(
+            'Boll Up',
+            candle.bollUp!.toStringAsFixed(2),
+            Colors.tealAccent,
+          ),
+          _buildIndicatorRow(
+            'Boll Mid',
+            candle.bollMid!.toStringAsFixed(2),
+            Colors.tealAccent,
+          ),
+          _buildIndicatorRow(
+            'Boll Dn',
+            candle.bollDn!.toStringAsFixed(2),
+            Colors.tealAccent,
+          ),
+        ],
+        if (candle.macd != null) ...[
+          _buildIndicatorRow(
+            'MACD',
+            candle.macd!.toStringAsFixed(2),
+            Colors.amberAccent,
+          ),
+          _buildIndicatorRow(
+            'DIF',
+            candle.dif!.toStringAsFixed(2),
+            Colors.amberAccent,
+          ),
+          _buildIndicatorRow(
+            'DEA',
+            candle.dea!.toStringAsFixed(2),
+            Colors.amberAccent,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildIndicatorRow(String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 9)),
+          Text(
+            value,
+            style: TextStyle(color: color, fontSize: 10, fontFamily: 'monospace'),
+          ),
+        ],
       ),
     );
   }
@@ -465,7 +705,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     return TextFormField(
       initialValue: value.toString(),
       style: const TextStyle(color: Colors.white, fontSize: 13),
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white54, fontSize: 11),

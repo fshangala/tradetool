@@ -34,6 +34,7 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
   double _totalGrossLossUsdt = 0.0;
   double _totalFeesUsdt = 0.0;
   int _leverage = 1;
+  final List<SimulatedTrade> _trades = [];
 
   double get initialCapital => _initialCapital;
   double get currentBalance => _currentBalance;
@@ -43,6 +44,7 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
   double get grossPnl => _totalGrossProfitUsdt + _totalGrossLossUsdt;
   double get totalEarnings => grossPnl - _totalFeesUsdt;
   int get leverage => _leverage;
+  List<SimulatedTrade> get trades => _trades;
 
   String? _error;
   String? get error => _error;
@@ -62,6 +64,7 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
     _totalGrossLossUsdt = 0.0;
     _totalFeesUsdt = 0.0;
     _leverage = 1;
+    _trades.clear();
     _error = null;
     notifyListeners();
   }
@@ -106,6 +109,7 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
 
       String currentPosition = 'NONE'; // NONE, LONG, SHORT
       double entryPrice = 0.0;
+      KLineEntity? entryCandle;
 
       // Start from the 100th candle
       for (int i = 100; i < klines.length; i++) {
@@ -132,9 +136,11 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
           if (longMet) {
             currentPosition = 'LONG';
             entryPrice = currentCandle.close;
+            entryCandle = currentCandle;
           } else if (shortMet) {
             currentPosition = 'SHORT';
             entryPrice = currentCandle.close;
+            entryCandle = currentCandle;
           }
         } else if (currentPosition == 'LONG') {
           // Check for Exit or Protection
@@ -153,6 +159,8 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
                 tpPrice,
                 'LONG',
                 strategy.walletPercentage,
+                entryCandle!,
+                currentCandle,
               );
               currentPosition = 'NONE';
               continue;
@@ -162,6 +170,8 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
                 slPrice,
                 'LONG',
                 strategy.walletPercentage,
+                entryCandle!,
+                currentCandle,
               );
               currentPosition = 'NONE';
               continue;
@@ -174,6 +184,8 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
               currentCandle.close,
               'LONG',
               strategy.walletPercentage,
+              entryCandle!,
+              currentCandle,
             );
             currentPosition = 'NONE';
           }
@@ -194,6 +206,8 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
                 tpPrice,
                 'SHORT',
                 strategy.walletPercentage,
+                entryCandle!,
+                currentCandle,
               );
               currentPosition = 'NONE';
               continue;
@@ -203,6 +217,8 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
                 slPrice,
                 'SHORT',
                 strategy.walletPercentage,
+                entryCandle!,
+                currentCandle,
               );
               currentPosition = 'NONE';
               continue;
@@ -215,6 +231,8 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
               currentCandle.close,
               'SHORT',
               strategy.walletPercentage,
+              entryCandle!,
+              currentCandle,
             );
             currentPosition = 'NONE';
           }
@@ -235,6 +253,7 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
         totalFees: _totalFeesUsdt,
         netEarnings: totalEarnings,
         rating: _calculateRating(),
+        trades: List.from(_trades),
       );
     } catch (e) {
       logger.e('Evaluation error: $e');
@@ -266,6 +285,8 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
     double exit,
     String side,
     double walletPercentage,
+    KLineEntity entryCandle,
+    KLineEntity exitCandle,
   ) {
     _totalTrades++;
 
@@ -308,6 +329,48 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
     } else {
       _lossTrades++;
     }
+
+    // Record the simulated trade
+    _trades.add(
+      SimulatedTrade(
+        side: side,
+        entryPrice: entry,
+        exitPrice: exit,
+        netPnl: netPnlOfTrade,
+        entryCandle: _toSimulatedCandle(entryCandle),
+        exitCandle: _toSimulatedCandle(exitCandle),
+      ),
+    );
+  }
+
+  SimulatedCandle _toSimulatedCandle(KLineEntity entity) {
+    return SimulatedCandle(
+      open: entity.open,
+      high: entity.high,
+      low: entity.low,
+      close: entity.close,
+      vol: entity.vol,
+      rsi: entity.rsi,
+      ema7:
+          entity.emaValueList != null && entity.emaValueList!.isNotEmpty
+              ? entity.emaValueList![0]
+              : null,
+      ema25:
+          entity.emaValueList != null && entity.emaValueList!.length > 1
+              ? entity.emaValueList![1]
+              : null,
+      ema99:
+          entity.emaValueList != null && entity.emaValueList!.length > 2
+              ? entity.emaValueList![2]
+              : null,
+      bollUp: entity.boll?.up,
+      bollMid: entity.boll?.mid,
+      bollDn: entity.boll?.dn,
+      macd: entity.macd,
+      dif: entity.dif,
+      dea: entity.dea,
+      time: entity.time ?? 0,
+    );
   }
 
   bool _evaluatePhase(List<Condition> conditions, List<KLineEntity> data) {
