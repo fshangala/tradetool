@@ -52,6 +52,17 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
   EvaluationResult? _lastResult;
   EvaluationResult? get lastResult => _lastResult;
 
+  // Cache for klines: key is "symbol_interval"
+  final Map<String, List<KLineEntity>> _klineCache = {};
+
+  bool hasCachedData(String symbol, String interval) {
+    return _klineCache.containsKey('${symbol}_$interval');
+  }
+
+  List<KLineEntity>? getCachedData(String symbol, String interval) {
+    return _klineCache['${symbol}_$interval'];
+  }
+
   void reset() {
     _isEvaluating = false;
     _progress = 0.0;
@@ -74,8 +85,9 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
     String symbol,
     String interval,
     double initialCapital,
-    int leverage,
-  ) async {
+    int leverage, {
+    bool forceRefresh = false,
+  }) async {
     reset();
     _isEvaluating = true;
     _initialCapital = initialCapital;
@@ -84,11 +96,19 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final klines = await binanceService.fetchKlines(
-        symbol: symbol,
-        interval: interval,
-        limit: 500,
-      );
+      final String cacheKey = '${symbol}_$interval';
+      List<KLineEntity> klines;
+
+      if (forceRefresh || !_klineCache.containsKey(cacheKey)) {
+        klines = await binanceService.fetchKlines(
+          symbol: symbol,
+          interval: interval,
+          limit: 500,
+        );
+        _klineCache[cacheKey] = klines;
+      } else {
+        klines = _klineCache[cacheKey]!;
+      }
 
       if (klines.length < 100) {
         throw Exception(

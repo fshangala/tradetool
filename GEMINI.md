@@ -74,6 +74,12 @@
     - **Evaluation Persistence:** Automatically saves the latest evaluation results, input parameters, and a performance-based **5-star rating** to each strategy.
     - **Detailed Backtesting History:** Captures full entry/exit candle data (OHLCV + indicators) for every simulated trade, with side-by-side visual comparison UI in the strategy list.
     - **Enhanced Strategy List:** Displays star ratings and success rates (`profitableTrades / totalTrades`) directly on the main strategy list for at-a-glance performance monitoring.
+- **Evaluation Performance & Visualization:** Optimized the strategy backtesting workflow for speed and clarity.
+    - **K-line Caching:** Implemented a caching mechanism in `StrategyEvaluationViewModel` to store candlestick data by symbol and interval, making repeated evaluations near-instant.
+    - **On-Demand Data Refresh:** Added a "Fetch New Data" button in the evaluation modal, allowing users to choose between using cached data or fetching the latest market data.
+    - **Integrated Strategy Chart:** Added a high-performance `KChartWidget` directly to the Strategy Edit screen. It appears below the evaluation button when a result is available, showing the price action and technical indicators.
+    - **Trade Timeline Visualization:** Developed a custom `TimelineIndicator` to plot simulated trades directly on the K-line chart.
+    - **Color-Coded Triggers:** Visualizes entry and exit points with specific colors: Green for Long entries, Red for Short entries, and Blue for all trade exits (Long or Short).
 
 ## Planned Features
 - **Enhanced Orders:** Support for Limit orders, Stop Loss, and Take Profit.

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
+import 'package:k_chart_plus/k_chart_plus.dart';
 import '../models/strategy.dart';
+import '../core/custom_indicators.dart';
 import '../viewmodels/strategy_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../viewmodels/strategy_evaluation_viewmodel.dart';
@@ -229,6 +231,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                 ),
                 const SizedBox(height: 32),
                 _buildEvaluateButton(),
+                _buildEvaluationChart(currentStrategy.lastResult),
                 if (currentStrategy.lastResult != null) ...[
                   const SizedBox(height: 24),
                   _buildLastEvaluationSection(currentStrategy.lastResult!),
@@ -239,6 +242,63 @@ class _StrategyEditViewState extends State<StrategyEditView> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildEvaluationChart(EvaluationResult? lastResult) {
+    if (lastResult == null) return const SizedBox.shrink();
+
+    return Consumer<StrategyEvaluationViewModel>(
+      builder: (context, evalViewModel, child) {
+        final datas = evalViewModel.getCachedData(lastResult.symbol, lastResult.interval);
+        if (datas == null || datas.isEmpty) return const SizedBox.shrink();
+
+        final List<TimePoint> timePoints = [];
+        for (var trade in lastResult.trades) {
+          // Entry
+          timePoints.add(TimePoint(
+            value: trade.entryCandle.time,
+            color: trade.side == 'LONG' ? Colors.green : Colors.red,
+          ));
+          // Exit
+          timePoints.add(TimePoint(
+            value: trade.exitCandle.time,
+            color: Colors.blue,
+          ));
+        }
+
+        final List<MainIndicator> mainIndicators = [
+          EMAIndicator(calcParams: [7, 25, 99]),
+          BOLLIndicator(),
+          TimelineIndicator(timePoints: timePoints),
+        ];
+        final List<SecondaryIndicator> secondaryIndicators = [
+          MACDIndicator(),
+          RSIIndicator(),
+        ];
+
+        return Container(
+          height: 450,
+          margin: const EdgeInsets.only(top: 24, left: 16, right: 16),
+          decoration: BoxDecoration(
+            color: BinanceTheme.surfaceColor.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: BinanceTheme.yellow.withValues(alpha: 0.1)),
+          ),
+          child: KChartWidget(
+            datas,
+            KChartStyle(),
+            KChartColors(),
+            detailBuilder: (entity) => const SizedBox.shrink(),
+            isTrendLine: false,
+            isLine: false,
+            mainIndicators: mainIndicators,
+            secondaryIndicators: secondaryIndicators,
+            volHidden: true,
+            fixedLength: 2,
+          ),
+        );
+      },
     );
   }
 
@@ -524,7 +584,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                 style: TextStyle(color: Colors.white38, fontSize: 11),
               ),
               value: _autoContinue,
-              activeColor: BinanceTheme.yellow,
+              activeThumbColor: BinanceTheme.yellow,
               onChanged: (val) => setState(() => _autoContinue = val),
             ),
           ],
@@ -1053,52 +1113,49 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: evalViewModel.isEvaluating
-                          ? null
-                          : () {
-                              final strategy = Strategy(
-                                id: _id,
-                                name: _nameController.text,
-                                autoContinue: _autoContinue,
-                                walletPercentage: _walletPercentage,
-                                longEntry: EntrySettings(
-                                  groups: _longEntryGroups,
-                                  operator: _longEntryOperator,
-                                  useProtection: _longUseProtection,
-                                  takeProfit: _longTP,
-                                  stopLoss: _longSL,
-                                ),
-                                shortEntry: EntrySettings(
-                                  groups: _shortEntryGroups,
-                                  operator: _shortEntryOperator,
-                                  useProtection: _shortUseProtection,
-                                  takeProfit: _shortTP,
-                                  stopLoss: _shortSL,
-                                ),
-                                longExit: StrategyPhase(groups: _longExitGroups, operator: _longExitOperator),
-                                shortExit: StrategyPhase(groups: _shortExitGroups, operator: _shortExitOperator),
-                              );
-                              final capital = double.tryParse(capitalController.text) ?? 1000.0;
-                              evalViewModel
-                                  .evaluate(strategy, selectedSymbol, selectedInterval, capital, selectedLeverage)
-                                  .then((_) {
-                                if (context.mounted && evalViewModel.lastResult != null && evalViewModel.error == null) {
-                                  final updatedStrategy = strategy.copyWith(lastResult: evalViewModel.lastResult);
-                                  Provider.of<StrategyViewModel>(context, listen: false).updateStrategy(updatedStrategy);
-                                }
-                              });
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: BinanceTheme.yellow,
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        disabledBackgroundColor: Colors.white10,
+                  Row(
+                    children: [
+                      if (evalViewModel.hasCachedData(selectedSymbol, selectedInterval))
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ElevatedButton(
+                              onPressed: evalViewModel.isEvaluating
+                                  ? null
+                                  : () {
+                                      final strategy = _getCurrentStrategy();
+                                      final capital = double.tryParse(capitalController.text) ?? 1000.0;
+                                      _runEvaluation(evalViewModel, strategy, selectedSymbol, selectedInterval, capital, selectedLeverage, true);
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white10,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                disabledBackgroundColor: Colors.white10,
+                              ),
+                              child: const Text('Fetch New Data'),
+                            ),
+                          ),
+                        ),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: evalViewModel.isEvaluating
+                              ? null
+                              : () {
+                                  final strategy = _getCurrentStrategy();
+                                  final capital = double.tryParse(capitalController.text) ?? 1000.0;
+                                  _runEvaluation(evalViewModel, strategy, selectedSymbol, selectedInterval, capital, selectedLeverage, false);
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: BinanceTheme.yellow,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            disabledBackgroundColor: Colors.white10,
+                          ),
+                          child: Text(evalViewModel.isEvaluating ? 'Evaluating...' : 'Start Evaluation'),
+                        ),
                       ),
-                      child: Text(evalViewModel.isEvaluating ? 'Evaluating...' : 'Start Evaluation'),
-                    ),
+                    ],
                   ),
                 ],
               );
@@ -1107,6 +1164,50 @@ class _StrategyEditViewState extends State<StrategyEditView> {
         ),
       ),
     );
+  }
+
+  Strategy _getCurrentStrategy() {
+    return Strategy(
+      id: _id,
+      name: _nameController.text,
+      autoContinue: _autoContinue,
+      walletPercentage: _walletPercentage,
+      longEntry: EntrySettings(
+        groups: _longEntryGroups,
+        operator: _longEntryOperator,
+        useProtection: _longUseProtection,
+        takeProfit: _longTP,
+        stopLoss: _longSL,
+      ),
+      shortEntry: EntrySettings(
+        groups: _shortEntryGroups,
+        operator: _shortEntryOperator,
+        useProtection: _shortUseProtection,
+        takeProfit: _shortTP,
+        stopLoss: _shortSL,
+      ),
+      longExit: StrategyPhase(groups: _longExitGroups, operator: _longExitOperator),
+      shortExit: StrategyPhase(groups: _shortExitGroups, operator: _shortExitOperator),
+    );
+  }
+
+  void _runEvaluation(
+    StrategyEvaluationViewModel evalViewModel,
+    Strategy strategy,
+    String symbol,
+    String interval,
+    double capital,
+    int leverage,
+    bool forceRefresh,
+  ) {
+    evalViewModel
+        .evaluate(strategy, symbol, interval, capital, leverage, forceRefresh: forceRefresh)
+        .then((_) {
+      if (mounted && evalViewModel.lastResult != null && evalViewModel.error == null) {
+        final updatedStrategy = strategy.copyWith(lastResult: evalViewModel.lastResult);
+        Provider.of<StrategyViewModel>(context, listen: false).updateStrategy(updatedStrategy);
+      }
+    });
   }
 
   Widget _buildModalDropdown(String label, String value, List<String> items, Function(String?) onChanged) {

@@ -30,6 +30,9 @@ This tool provides a streamlined, high-performance interface for futures traders
     - **Performance Scoring:** Automatically calculates a **5-star rating** based on Net Earnings and Profit Factor.
     - **Persistence:** Latest evaluation results and input parameters are saved to each strategy for easy comparison.
     - **Live Analytics:** Track Gross Profit, Gross Loss, Fees, and final Net Earnings during the simulation.
+    - **Performance Optimization:** Implemented K-line caching for near-instant repeated evaluations without redundant API calls.
+    - **On-Demand Data Refresh:** Choose between cached data or fetching fresh market data for each simulation.
+    - **Visual Trade Timeline:** View simulated trade entries (Green/Red) and exits (Blue) plotted directly on a dedicated K-line chart in the Strategy Edit screen.
 - **Enhanced Strategy List:** View performance ratings and success rates for all your strategies at a glance from the main list.
 - **Instant Position Exit:** Quick "Close Position" button to exit trades at market price with a single confirmation.
 - **Trade History & Analytics:** Comprehensive history of your trades with detailed breakdowns of price, quantity, commission, and realized PnL.

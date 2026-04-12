@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
+import 'package:tradetool/core/custom_indicators.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:collection/collection.dart';
@@ -14,59 +15,6 @@ import 'strategy_viewmodel.dart';
 import '../models/strategy.dart';
 import '../core/logger.dart';
 
-class PositionIndicator extends MainIndicator<KLineEntity, MAStyle> {
-  final List<double> entryPrices;
-
-  PositionIndicator({required this.entryPrices})
-    : super(
-        name: 'POS',
-        shortName: 'POS',
-        indicatorStyle: const MAStyle(),
-        calcParams: [],
-      );
-
-  @override
-  void calc(List<KLineEntity> data) {}
-
-  @override
-  void drawChart(
-    KLineEntity lastData,
-    KLineEntity curData,
-    double lastX,
-    double curX,
-    double Function(double) getLineY,
-    Canvas canvas,
-    KChartColors chartColors,
-  ) {
-    for (var price in entryPrices) {
-      final y = getLineY(price);
-      canvas.drawLine(
-        Offset(lastX, y),
-        Offset(curX, y),
-        Paint()
-          ..color = Colors.green.withValues(alpha: 0.7)
-          ..strokeWidth = 1.0
-          ..style = PaintingStyle.stroke,
-      );
-    }
-  }
-
-  @override
-  TextSpan? drawFigure(KLineEntity data, int index, KChartColors chartColors) {
-    return null;
-  }
-
-  @override
-  (double, double) getMaxMinValue(KLineEntity data, double min, double max) {
-    double newMin = min;
-    double newMax = max;
-    for (var price in entryPrices) {
-      if (price < newMin) newMin = price;
-      if (price > newMax) newMax = price;
-    }
-    return (newMin, newMax);
-  }
-}
 
 class DashboardViewModel extends ChangeNotifier {
   final SettingsViewModel settingsViewModel;
@@ -148,6 +96,9 @@ class DashboardViewModel extends ChangeNotifier {
   List<MainIndicator> _mainIndicators = [
     EMAIndicator(calcParams: [7, 25, 99]),
     BOLLIndicator(),
+    TimelineIndicator(timePoints: [
+      TimePoint(value: DateTime.now().millisecondsSinceEpoch, color: Colors.red),
+    ])
   ];
   final List<SecondaryIndicator> _secondaryIndicators = [
     MACDIndicator(),
@@ -281,6 +232,9 @@ class DashboardViewModel extends ChangeNotifier {
     _mainIndicators = [
       EMAIndicator(calcParams: [7, 25, 99]),
       BOLLIndicator(),
+      TimelineIndicator(timePoints: [
+        TimePoint(value: DateTime.now().millisecondsSinceEpoch, color: Colors.red),
+      ])
     ];
 
     if (entryPrices.isNotEmpty) {
