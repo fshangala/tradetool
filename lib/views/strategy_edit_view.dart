@@ -635,7 +635,15 @@ class _StrategyEditViewState extends State<StrategyEditView> {
         : c.indicatorName!;
     String rightSide = c.targetIndicatorName ?? c.value.toString();
     String suffix = c.useLastClosedData ? ' [Last]' : '';
-    return '$leftSide $opStr $rightSide$suffix';
+    
+    String prefix = '';
+    if (c.evalType == EvaluationType.any) {
+      prefix = 'ANY of Last ${c.lookbackCandles}: ';
+    } else if (c.evalType == EvaluationType.all) {
+      prefix = 'ALL of Last ${c.lookbackCandles}: ';
+    }
+
+    return '$prefix$leftSide $opStr $rightSide$suffix';
   }
 
   String _opToSymbol(Operator op) {
@@ -1311,7 +1319,9 @@ class _StrategyEditViewState extends State<StrategyEditView> {
     bool isComparingWithIndicator = false;
     String targetIndicator = 'EMA25';
     bool useLastClosedData = false;
+    EvaluationType selectedEvalType = EvaluationType.current;
     final valueController = TextEditingController();
+    final lookbackController = TextEditingController(text: '5');
 
     showDialog(
       context: context,
@@ -1388,6 +1398,28 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                     decoration: const InputDecoration(labelText: 'Constant Value', labelStyle: TextStyle(color: Colors.white70)),
                   ),
                 const SizedBox(height: 16),
+                const Text('Evaluation Period', style: TextStyle(color: BinanceTheme.yellow, fontSize: 12)),
+                DropdownButton<EvaluationType>(
+                  value: selectedEvalType,
+                  dropdownColor: Colors.grey[850],
+                  isExpanded: true,
+                  style: const TextStyle(color: Colors.white),
+                  items: EvaluationType.values.map((type) {
+                    String label = 'Current Candle';
+                    if (type == EvaluationType.any) label = 'ANY of last N candles';
+                    if (type == EvaluationType.all) label = 'ALL of last N candles';
+                    return DropdownMenuItem(value: type, child: Text(label));
+                  }).toList(),
+                  onChanged: (val) => setDialogState(() => selectedEvalType = val!),
+                ),
+                if (selectedEvalType != EvaluationType.current)
+                  TextField(
+                    controller: lookbackController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(labelText: 'Lookback Range (N)', labelStyle: TextStyle(color: Colors.white70)),
+                  ),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     const Text('Use Last Closed Candle', style: TextStyle(color: BinanceTheme.yellow, fontSize: 12)),
@@ -1413,6 +1445,7 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                   if (parsed == null) return;
                   value = parsed;
                 }
+                final int finalLookback = selectedEvalType == EvaluationType.current ? 1 : (int.tryParse(lookbackController.text) ?? 5);
                 setState(() {
                   conditions.add(Condition(
                     type: selectedType,
@@ -1422,6 +1455,8 @@ class _StrategyEditViewState extends State<StrategyEditView> {
                     targetType: isComparingWithIndicator ? ConditionType.indicator : ConditionType.price,
                     targetIndicatorName: isComparingWithIndicator ? targetIndicator : null,
                     useLastClosedData: useLastClosedData,
+                    evalType: selectedEvalType,
+                    lookbackCandles: finalLookback,
                   ));
                 });
                 Navigator.pop(context);

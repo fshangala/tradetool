@@ -21,6 +21,7 @@ This tool provides a streamlined, high-performance interface for futures traders
     - **Signed Value Inputs:** Full support for negative numbers in condition thresholds (e.g., comparing MACD Hist < -5.0).
     - **Auto Continue Toggle:** Choose whether a strategy should persist and search for the next trade after an exit, or automatically remove itself to return to manual mode.
     - **Customizable Wallet Usage:** Allocate 1-80% of available wallet balance per strategy.
+    - **Advanced Lookback:** Evaluate conditions over the last N candles using "ANY" or "ALL" logic (e.g., check if RSI was above 70 at any point in the last 5 candles).
 - **Dashboard Automation:** Optimized for hands-free trading with automated strategy execution and a "Retry" mechanism for failed API actions.
 - **Algo Order Service:** Utilizes Binance's specialized Algo Order API for reliable automated protection.
 - **Strategy Evaluation (Backtesting):** Perform high-fidelity strategy simulations before going live.

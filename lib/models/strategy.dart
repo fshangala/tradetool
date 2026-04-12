@@ -3,6 +3,8 @@ enum ConditionType { price, indicator }
 
 enum Operator { greaterThan, lessThan, equal, crossesAbove, crossesBelow }
 
+enum EvaluationType { current, any, all }
+
 class Condition {
   final ConditionType type;
   final String? indicatorName; // RSI, EMA7, EMA25, EMA99, etc.
@@ -12,6 +14,8 @@ class Condition {
   final ConditionType targetType;
   final String? targetIndicatorName;
   final bool useLastClosedData;
+  final int lookbackCandles;
+  final EvaluationType evalType;
 
   Condition({
     required this.type,
@@ -22,6 +26,8 @@ class Condition {
     this.targetType = ConditionType.price,
     this.targetIndicatorName,
     this.useLastClosedData = false,
+    this.lookbackCandles = 1,
+    this.evalType = EvaluationType.current,
   });
 
   factory Condition.fromJson(Map<String, dynamic> json) {
@@ -36,6 +42,10 @@ class Condition {
           : ConditionType.price,
       targetIndicatorName: json['targetIndicatorName'],
       useLastClosedData: json['useLastClosedData'] ?? false,
+      lookbackCandles: json['lookbackCandles'] ?? 1,
+      evalType: json['evalType'] != null
+          ? EvaluationType.values.firstWhere((e) => e.name == json['evalType'])
+          : EvaluationType.current,
     );
   }
 
@@ -49,6 +59,8 @@ class Condition {
       'targetType': targetType.name,
       'targetIndicatorName': targetIndicatorName,
       'useLastClosedData': useLastClosedData,
+      'lookbackCandles': lookbackCandles,
+      'evalType': evalType.name,
     };
   }
 }

@@ -64,6 +64,7 @@
     - **Backward Compatibility:** Robust migration layer in data models to wrap legacy single-list conditions into groups.
     - **Strategy Auto Continue:** Added an `autoContinue` toggle to each strategy. If disabled, the strategy automatically deselects itself from the pair after an exit, returning the user to manual mode.
     - **Signed Input Support:** Updated numeric fields in UI to allow negative values, enabling comparisons against negative indicator levels (e.g., MACD Histogram < -10.0).
+    - **Advanced Lookback Conditions:** Implemented support for "ANY" or "ALL" evaluations over a specified range of candles (e.g., "RSI > 70 on ANY of last 5 candles").
 - **Algo Order Support:** Integrated Binance's specialized Algo Order Service (`/fapi/v1/algoOrder`) for automated protection orders.
 - **Dashboard Refinement:** Removed manual trade buttons to focus on automated execution; added a dynamic **Retry** button for failed strategy actions (Entry, Protection, or Exit).
 - **Strategy Evaluation (Backtesting):** Implemented a comprehensive backtesting engine with realistic simulation.

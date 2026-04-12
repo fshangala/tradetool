@@ -444,13 +444,37 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
   bool _evaluateCondition(Condition condition, List<KLineEntity> data) {
     if (data.isEmpty) return false;
 
-    // In simulation, we always assume the candle is "closed" relative to the current index
-    final KLineEntity activeData;
-    if (condition.useLastClosedData) {
-      activeData = data.length >= 2 ? data[data.length - 2] : data.last;
-    } else {
-      activeData = data.last;
+    int lookback = condition.lookbackCandles;
+    if (condition.evalType == EvaluationType.current) lookback = 1;
+
+    // If lookback > data.length, cap it
+    int actualLookback = lookback.clamp(1, data.length);
+
+    List<bool> results = [];
+    for (int i = 0; i < actualLookback; i++) {
+      int index = data.length - 1 - i;
+      if (condition.useLastClosedData) index--;
+      if (index < 0) continue;
+
+      final currentSubList = data.sublist(0, index + 1);
+      results.add(_evaluateConditionAt(condition, currentSubList));
     }
+
+    if (results.isEmpty) return false;
+
+    if (condition.evalType == EvaluationType.all) {
+      return results.every((r) => r);
+    } else if (condition.evalType == EvaluationType.any) {
+      return results.any((r) => r);
+    } else {
+      return results.first;
+    }
+  }
+
+  bool _evaluateConditionAt(Condition condition, List<KLineEntity> dataAt) {
+    if (dataAt.isEmpty) return false;
+
+    final activeData = dataAt.last;
 
     double leftValue;
     if (condition.type == ConditionType.price) {
@@ -469,7 +493,7 @@ class StrategyEvaluationViewModel extends ChangeNotifier {
       rightValue = condition.value;
     }
 
-    return _checkOperator(condition.op, leftValue, rightValue, condition, data);
+    return _checkOperator(condition.op, leftValue, rightValue, condition, dataAt);
   }
 
   bool _checkOperator(
